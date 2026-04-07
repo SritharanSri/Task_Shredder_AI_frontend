@@ -19,13 +19,19 @@ export function useUser() {
 
   useEffect(() => {
     fetch(`${API_BASE}/user/${getUserId()}`)
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        return res.json();
+      })
       .then(data => {
-        setUser(data);
+        if (data && !data.error) {
+          setUser(data);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error("Failed to load user:", err);
+        // Leave the default 'user' state intact
         setLoading(false);
       });
   }, []);
