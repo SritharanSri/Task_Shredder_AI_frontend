@@ -47,6 +47,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [adLoading, setAdLoading] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [apiError, setApiError] = useState(null);
 
   // ── Hooks ──
@@ -242,6 +243,7 @@ export default function App() {
                 <TaskList
                   tasks={tasks}
                   activeTaskId={activeTaskId}
+                  isTimerRunning={isTimerRunning}
                   onTaskStart={handleTaskStart}
                   onTaskComplete={handleTaskComplete}
                   isLoading={false}
@@ -261,7 +263,11 @@ export default function App() {
         {tab === 'timer' && (
           <div className="mt-4">
             {activeTask ? (
-              <PomodoroTimer activeTask={activeTask} onComplete={handleTimerComplete} />
+              <PomodoroTimer 
+                activeTask={activeTask} 
+                onComplete={handleTimerComplete} 
+                onRunningChange={setIsTimerRunning}
+              />
             ) : (
               <div className="glass-card p-10 text-center mt-8 animate-fade-in-up"
                 style={{ opacity: 0, animationFillMode: 'forwards' }}>
@@ -279,6 +285,7 @@ export default function App() {
               <TaskList
                 tasks={tasks}
                 activeTaskId={activeTaskId}
+                isTimerRunning={isTimerRunning}
                 onTaskStart={handleTaskStart}
                 onTaskComplete={handleTaskComplete}
                 isLoading={false}

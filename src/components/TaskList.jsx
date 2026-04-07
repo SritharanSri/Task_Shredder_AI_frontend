@@ -1,4 +1,4 @@
-export default function TaskList({ tasks, activeTaskId, onTaskComplete, onTaskStart, isLoading }) {
+export default function TaskList({ tasks, activeTaskId, isTimerRunning, onTaskComplete, onTaskStart, isLoading }) {
   if (isLoading) {
     return (
       <div className="mt-6 space-y-3 animate-fade-in-up" style={{ opacity: 0, animationFillMode: 'forwards' }}>
@@ -113,7 +113,7 @@ export default function TaskList({ tasks, activeTaskId, onTaskComplete, onTaskSt
                   <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
                 </svg>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>25 min session</span>
-                {isActive && (
+                {isActive && isTimerRunning && (
                   <>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>·</span>
                     <span style={{ fontSize: 11, color: 'var(--purple-light)' }}>Timer running 🔥</span>

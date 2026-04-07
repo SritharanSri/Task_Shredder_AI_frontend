@@ -25,7 +25,7 @@ function sendNotification(title, body) {
   }
 }
 
-export default function PomodoroTimer({ activeTask, onComplete }) {
+export default function PomodoroTimer({ activeTask, onComplete, onRunningChange }) {
   const [mode, setMode] = useState('pomodoro');
   const [timeLeft, setTimeLeft] = useState(MODES.pomodoro.duration);
   const [isRunning, setIsRunning] = useState(false);
@@ -67,6 +67,11 @@ export default function PomodoroTimer({ activeTask, onComplete }) {
     return () => clearInterval(intervalRef.current);
   }, [isRunning, timeLeft]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sync running state back to parent
+  useEffect(() => {
+    onRunningChange?.(isRunning);
+  }, [isRunning, onRunningChange]);
+
   const handleTimerEnd = useCallback(() => {
     if (soundEnabled) playComplete();
     if (mode === 'pomodoro') {
@@ -107,7 +112,8 @@ export default function PomodoroTimer({ activeTask, onComplete }) {
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const seconds = String(timeLeft % 60).padStart(2, '0');
   const progress = (currentMode.duration - timeLeft) / currentMode.duration;
-  const dashOffset = CIRCUMFERENCE * (1 - progress);
+  // Ensure we don't have a full ring at exactly 0 progress due to transition artifacts
+  const dashOffset = progress === 0 ? CIRCUMFERENCE : CIRCUMFERENCE * (1 - progress);
 
   const isWarning = mode === 'pomodoro' && timeLeft <= 5 * 60 && timeLeft > 60;
   const isDanger  = mode === 'pomodoro' && timeLeft <= 60;
