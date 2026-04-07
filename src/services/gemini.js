@@ -1,7 +1,9 @@
 // Google Gemini API service
 // All generative logic has been moved to the Backend proxy for security! 🔒
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/breakdown';
+const API_URL = import.meta.env.VITE_BACKEND_URL 
+  ? `${import.meta.env.VITE_BACKEND_URL}/breakdown` 
+  : 'http://localhost:3000/api/breakdown';
 
 export async function breakdownWithGemini(task) {
   try {
