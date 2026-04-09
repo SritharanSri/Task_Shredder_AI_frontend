@@ -1,11 +1,11 @@
-// Google Gemini API service
+// Groq Cloud AI Service
 // All generative logic has been moved to the Backend proxy for security! 🔒
 
 const API_URL = import.meta.env.VITE_BACKEND_URL 
   ? `${import.meta.env.VITE_BACKEND_URL}/break-task` 
   : 'http://localhost:3000/api/break-task';
 
-export async function breakdownWithGemini(task) {
+export async function breakdownWithAI(task) {
   const response = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

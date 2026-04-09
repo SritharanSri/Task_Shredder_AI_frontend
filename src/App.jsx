@@ -9,7 +9,7 @@ import Toast from './components/Toast';
 import UserHeader from './components/UserHeader';
 import { useUser } from './hooks/useUser';
 import { useTelegram } from './hooks/useTelegram';
-import { breakdownWithGemini, mockBreakdown } from './services/gemini';
+import { breakdownWithAI, mockBreakdown } from './services/ai';
 import { showAdsgramAd } from './services/adsgram';
 
 // ── Tab icons (inline SVG to keep bundle small) ──
@@ -84,7 +84,7 @@ export default function App() {
     }, 5000);
 
     try {
-      const result = await breakdownWithGemini(mainTask);
+      const result = await breakdownWithAI(mainTask);
       setTasks(result);
       updateCredits(-1);
       setShredCount(prev => prev + 1);
@@ -260,7 +260,7 @@ export default function App() {
                 {/* API error hint */}
                 {apiError && (
                   <div className="mt-3 p-3 rounded-xl text-xs" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5' }}>
-                    ⚠️ {apiError}. Using mock data. Add your Gemini API key in <code>.env</code> file.
+                    ⚠️ {apiError}. Using mock data. Add your GROQ_API_KEY in the backend <code>.env</code> file.
                   </div>
                 )}
 
@@ -466,7 +466,7 @@ export default function App() {
           <button onClick={() => window.open('https://t.me/your_support', '_blank')}>Contact</button>
         </div>
         <p className="mt-3 text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
-          © 2026 TASK SHREDDER AI • POWERED BY GEMINI 2.0
+          © 2026 TASK SHREDDER AI • POWERED BY GROQ CLOUD
         </p>
       </footer>
 

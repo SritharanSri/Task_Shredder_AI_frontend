@@ -103,7 +103,7 @@ const TaskInput = React.memo(function TaskInput({ onBreakdown, isLoading }) {
       </button>
 
       <p className="text-center mt-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-40">
-        POWERED BY GEMINI 1.5 PRO
+        POWERED BY GROQ CLOUD
       </p>
     </div>
   );
