@@ -18,7 +18,7 @@ const TaskList = React.memo(function TaskList({
            <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0s' }} />
            <div className="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: '0.2s' }} />
            <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0.4s' }} />
-           <span className="text-sm font-black text-slate-400 uppercase tracking-widest ml-2">AI is shredding your task...</span>
+           <span className="text-sm font-black text-slate-400 uppercase tracking-widest ml-2 animate-pulse">AI is shredding your task...</span>
         </div>
         {[...Array(5)].map((_, i) => (
           <div key={i} className="shimmer h-[72px] rounded-2xl" style={{ animationDelay: `${i * 0.1}s`, opacity: 0.5 }} />

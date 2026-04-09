@@ -11,11 +11,11 @@ export default function Hero({ onStart }) {
           Next-Gen AI Productivity
         </div>
         <h1 className="text-4xl md:text-6xl font-black leading-[1.05] tracking-tight mb-6">
-          Shred big tasks<br/>
-          <span className="gradient-text">into simple steps</span>
+          Break your big tasks<br/>
+          <span className="gradient-text">into simple steps with AI</span>
         </h1>
         <p className="text-base md:text-lg text-slate-400 max-w-sm mx-auto leading-relaxed font-medium">
-          The AI-powered task shredder. Convert overwhelming projects into bite-sized Pomodoro sessions.
+          The ultimate AI task shredder. Convert overwhelming goals into bite-sized actionable sessions.
         </p>
       </div>
 
