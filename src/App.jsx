@@ -52,6 +52,8 @@ export default function App() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [showHero, setShowHero] = useState(true);
+  const [shredCount, setShredCount] = useState(0);
+  const [lastInput, setLastInput] = useState('');
 
   // ── Hooks ──
   const { user } = useTelegram();
@@ -71,20 +73,31 @@ export default function App() {
     setApiError(null);
     setTab('home');
     setShowHero(false);
+    setLastInput(mainTask);
 
-    // Timeout logic
+    // QA Optimized Timeout (exactly 5s)
     const timeout = setTimeout(() => {
       if (isLoading) {
-        setApiError('Request taking too long. Please try again or use fallback.');
-        showToast('Connection slow... using fallback plan.', 'info');
+        setApiError('AI is extremely busy. Using heavy-load fallback...');
+        showToast('Heavy load... Shredding tasks manually.', 'info');
       }
-    }, 6000);
+    }, 5000);
 
     try {
       const result = await breakdownWithGemini(mainTask);
       setTasks(result);
       updateCredits(-1);
-      showToast('Broken into 5 Pomodoro steps! 🚀', 'success');
+      setShredCount(prev => prev + 1);
+      showToast('Task Shredded! Strategy Ready 🚀', 'success');
+
+      // AdsGram Safety: 2s Delay + Frequency Logic (1 ad per 3 actions)
+      if ((shredCount + 1) % 3 === 0) {
+        setTimeout(() => {
+          showToast('Loading sponsored bonus...', 'info');
+          handleWatchAd(true); // Auto-trigger ad
+        }, 2000);
+      }
+
     } catch (err) {
       setApiError(err.message);
       showToast(`AI Error: ${err.message}. Using fallback.`, 'error');
@@ -94,6 +107,10 @@ export default function App() {
       clearTimeout(timeout);
       setIsLoading(false);
     }
+  };
+
+  const handleRegenerate = () => {
+    if (lastInput) handleBreakdown(lastInput);
   };
 
   // ── Task actions ──
@@ -131,20 +148,20 @@ export default function App() {
   };
 
   // ── Rewarded Ad ──
-  const handleWatchAd = () => {
-    setAdLoading(true);
+  const handleWatchAd = (isAuto = false) => {
+    if (!isAuto) setAdLoading(true);
     showAdsgramAd({
       blockId: import.meta.env.VITE_ADSGRAM_BLOCK_ID || 'YOUR_BLOCK_ID',
       onReward: () => {
-        setAdLoading(false);
+        if (!isAuto) setAdLoading(false);
         updateCredits(3);
-        showToast('+3 credits earned! 🎉', 'success');
+        showToast('+3 Credits Earned! 🎉', 'success');
       },
       onError: () => {
-        setAdLoading(false);
-        // Dev fallback — simulate reward
+        if (!isAuto) setAdLoading(false);
+        // Dev fallback
         updateCredits(3);
-        showToast('+3 credits added (dev mode) ⚡', 'info');
+        showToast('+3 Credits Added (Dev Fallback) ⚡', 'info');
       },
     });
   };
@@ -284,6 +301,7 @@ export default function App() {
                   onTaskComplete={handleTaskComplete}
                   onReset={handleReset}
                   onCopy={handleCopyPlan}
+                  onRegenerate={handleRegenerate}
                   isLoading={false}
                 />
               </>
@@ -322,6 +340,7 @@ export default function App() {
                 onTaskComplete={handleTaskComplete}
                 onReset={handleReset}
                 onCopy={handleCopyPlan}
+                onRegenerate={handleRegenerate}
                 isLoading={false}
               />
             )}

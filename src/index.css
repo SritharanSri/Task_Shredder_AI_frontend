@@ -41,11 +41,14 @@ html, body {
   height: 100%;
   height: 100dvh;
   overflow-x: hidden;
+  position: relative;
 }
 
 #root {
   min-height: 100vh;
   min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Scrollbar ── */
@@ -358,18 +361,22 @@ html, body {
   border-radius: 12px;
 }
 
+button, input, textarea, a, .tab-btn {
+  pointer-events: auto !important;
+}
+
 /* ── Tab bar ── */
 .tab-bar {
   background: rgba(10, 10, 26, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--border-subtle);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255,255,255,0.08);
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 100;
-  pointer-events: auto !important; /* Ensure it's clickable */
+  z-index: 9999;
+  pointer-events: auto !important;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -378,8 +385,8 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 12px 20px;
-  min-height: 44px; /* Native tap target */
+  padding: 10px;
+  min-height: 52px; /* Native tap target */
   border-radius: 12px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--text-muted);
