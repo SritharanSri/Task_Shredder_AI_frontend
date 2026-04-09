@@ -22,7 +22,7 @@ export async function breakdownWithGemini(task) {
 }
 
 // ── Fallback mock (used when no API key) ──
-function mockBreakdown(task) {
+export function mockBreakdown(task) {
   return new Promise((resolve) => {
     setTimeout(() => {
       const steps = [

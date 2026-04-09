@@ -4,6 +4,7 @@ const TaskInput = lazy(() => import('./components/TaskInput'));
 const TaskList = lazy(() => import('./components/TaskList'));
 const PomodoroTimer = lazy(() => import('./components/PomodoroTimer'));
 const StatsBar = lazy(() => import('./components/StatsBar'));
+const Hero = lazy(() => import('./components/Hero'));
 import Toast from './components/Toast';
 import UserHeader from './components/UserHeader';
 import { useUser } from './hooks/useUser';
@@ -50,6 +51,7 @@ export default function App() {
   const [buyLoading, setBuyLoading] = useState(false);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [showHero, setShowHero] = useState(true);
 
   // ── Hooks ──
   const { user } = useTelegram();
@@ -68,6 +70,15 @@ export default function App() {
     setActiveTaskId(null);
     setApiError(null);
     setTab('home');
+    setShowHero(false);
+
+    // Timeout logic
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        setApiError('Request taking too long. Please try again or use fallback.');
+        showToast('Connection slow... using fallback plan.', 'info');
+      }
+    }, 6000);
 
     try {
       const result = await breakdownWithGemini(mainTask);
@@ -80,6 +91,7 @@ export default function App() {
       const fallback = await mockBreakdown(mainTask);
       setTasks(fallback);
     } finally {
+      clearTimeout(timeout);
       setIsLoading(false);
     }
   };
@@ -102,6 +114,20 @@ export default function App() {
 
   const handleTimerComplete = () => {
     if (activeTaskId) handleTaskComplete(activeTaskId);
+  };
+
+  const handleCopyPlan = () => {
+    const text = tasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n');
+    navigator.clipboard.writeText(`My ${tasks.length}-step plan for "${tasks[0]?.title || 'my task'}":\n\n${text}`)
+      .then(() => showToast('Plan copied to clipboard! 📋', 'success'))
+      .catch(() => showToast('Failed to copy', 'error'));
+  };
+
+  const handleReset = () => {
+    setTasks([]);
+    setActiveTaskId(null);
+    setShowHero(true);
+    setApiError(null);
   };
 
   // ── Rewarded Ad ──
@@ -203,10 +229,14 @@ export default function App() {
               </div>
             )}
 
-            {/* Input block */}
+            {/* Hero / Input block */}
             {tasks.length === 0 && !isLoading && (
               <>
-                <TaskInput onBreakdown={handleBreakdown} isLoading={isLoading} />
+                {showHero ? (
+                  <Hero onStart={() => setShowHero(false)} />
+                ) : (
+                  <TaskInput onBreakdown={handleBreakdown} isLoading={isLoading} />
+                )}
 
                 {/* API error hint */}
                 {apiError && (
@@ -250,14 +280,10 @@ export default function App() {
                   isTimerRunning={isTimerRunning}
                   onTaskStart={handleTaskStart}
                   onTaskComplete={handleTaskComplete}
+                  onReset={handleReset}
+                  onCopy={handleCopyPlan}
                   isLoading={false}
                 />
-                <button
-                  className="w-full mt-3 py-3 text-sm font-medium rounded-2xl transition-all"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}
-                  onClick={() => { setTasks([]); setActiveTaskId(null); setApiError(null); }}>
-                  + Start a new task
-                </button>
               </>
             )}
           </div>
@@ -292,6 +318,8 @@ export default function App() {
                 isTimerRunning={isTimerRunning}
                 onTaskStart={handleTaskStart}
                 onTaskComplete={handleTaskComplete}
+                onReset={handleReset}
+                onCopy={handleCopyPlan}
                 isLoading={false}
               />
             )}
