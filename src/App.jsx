@@ -459,13 +459,12 @@ export default function App() {
       {/* ── Compliance Footer ── */}
       <footer className="w-full max-w-lg mx-auto px-6 pb-28 pt-2 text-center opacity-40 hover:opacity-100 transition-opacity">
         <div className="flex justify-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
-          <button onClick={() => window.open('https://example.com/privacy', '_blank')}>Privacy</button>
-          <span>•</span>
-          <button onClick={() => window.open('https://example.com/terms', '_blank')}>Terms</button>
-          <span>•</span>
-          <button onClick={() => window.open('https://t.me/your_support', '_blank')}>Contact</button>
+          <button onClick={() => window.open('https://t.me/Kalai_Developer', '_blank')}>Contact Developer</button>
         </div>
-        <p className="mt-3 text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
+        <p className="mt-2 text-[10px] text-purple-400 font-black uppercase tracking-widest">
+          Created by @Kalai_Developer
+        </p>
+        <p className="mt-1.5 text-[8px] text-slate-600 font-bold uppercase tracking-tighter">
           © 2026 TASK SHREDDER AI • POWERED BY GROQ CLOUD
         </p>
       </footer>
