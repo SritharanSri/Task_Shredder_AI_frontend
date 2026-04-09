@@ -6,24 +6,19 @@ const API_URL = import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000/api/breakdown';
 
 export async function breakdownWithGemini(task) {
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ task }),
-    });
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task }),
+  });
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err?.error || `HTTP ${response.status}`);
-    }
-
-    const steps = await response.json();
-    return steps;
-  } catch (err) {
-    console.warn('Backend proxy failed, using mock fallback:', err.message);
-    return mockBreakdown(task);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.error || `HTTP ${response.status}`);
   }
+
+  const steps = await response.json();
+  return steps;
 }
 
 // ── Fallback mock (used when no API key) ──

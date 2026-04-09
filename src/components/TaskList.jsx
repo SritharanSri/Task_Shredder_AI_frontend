@@ -1,4 +1,6 @@
-export default function TaskList({ tasks, activeTaskId, isTimerRunning, onTaskComplete, onTaskStart, isLoading }) {
+import React from 'react';
+
+const TaskList = React.memo(function TaskList({ tasks, activeTaskId, isTimerRunning, onTaskComplete, onTaskStart, isLoading }) {
   if (isLoading) {
     return (
       <div className="mt-6 space-y-3 animate-fade-in-up" style={{ opacity: 0, animationFillMode: 'forwards' }}>
@@ -126,4 +128,6 @@ export default function TaskList({ tasks, activeTaskId, isTimerRunning, onTaskCo
       </div>
     </div>
   );
-}
+});
+
+export default TaskList;

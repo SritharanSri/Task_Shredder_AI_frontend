@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
-export default function TaskInput({ onBreakdown, isLoading }) {
+const TaskInput = React.memo(function TaskInput({ onBreakdown, isLoading }) {
   const [task, setTask] = useState('');
   const textareaRef = useRef(null);
 
@@ -101,4 +101,6 @@ export default function TaskInput({ onBreakdown, isLoading }) {
       </p>
     </div>
   );
-}
+});
+
+export default TaskInput;

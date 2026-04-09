@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import TaskInput from './components/TaskInput';
-import TaskList from './components/TaskList';
-import PomodoroTimer from './components/PomodoroTimer';
-import StatsBar from './components/StatsBar';
+import { useState, useCallback, Suspense, lazy } from 'react';
+
+const TaskInput = lazy(() => import('./components/TaskInput'));
+const TaskList = lazy(() => import('./components/TaskList'));
+const PomodoroTimer = lazy(() => import('./components/PomodoroTimer'));
+const StatsBar = lazy(() => import('./components/StatsBar'));
 import Toast from './components/Toast';
 import UserHeader from './components/UserHeader';
 import { useUser } from './hooks/useUser';
 import { useTelegram } from './hooks/useTelegram';
-import { breakdownWithGemini } from './services/gemini';
+import { breakdownWithGemini, mockBreakdown } from './services/gemini';
 import { showAdsgramAd } from './services/adsgram';
 
 // ── Tab icons (inline SVG to keep bundle small) ──
@@ -75,7 +76,9 @@ export default function App() {
       showToast('Broken into 5 Pomodoro steps! 🚀', 'success');
     } catch (err) {
       setApiError(err.message);
-      showToast(`AI Error: ${err.message}`, 'error');
+      showToast(`AI Error: ${err.message}. Using fallback.`, 'error');
+      const fallback = await mockBreakdown(mainTask);
+      setTasks(fallback);
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +134,7 @@ export default function App() {
     setBuyLoading(true);
     try {
       // Fetch invoice link from your backend
-      const res = await fetch('http://localhost:3000/api/invoice', { method: 'POST' });
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api'}/invoice`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to generate invoice');
       
       const { invoiceLink } = await res.json();
@@ -179,6 +182,7 @@ export default function App() {
         <UserHeader user={user} credits={credits} />
 
         {/* ── HOME TAB ── */}
+        <Suspense fallback={<div className="flex justify-center p-10 mt-10"><span className="animate-spin text-2xl">⏳</span></div>}>
         {tab === 'home' && (
           <div className="mt-4">
             {/* All done celebration */}
@@ -398,6 +402,7 @@ export default function App() {
             )}
           </div>
         )}
+        </Suspense>
       </div>
       )}
 

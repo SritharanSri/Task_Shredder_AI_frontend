@@ -1,0 +1,16 @@
+{
+  "name": "FocusFlow AI",
+  "short_name": "FocusFlow",
+  "description": "AI-powered productivity and Pomodoro timer.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
