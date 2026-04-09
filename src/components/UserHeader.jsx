@@ -1,4 +1,4 @@
-export default function UserHeader({ user, credits }) {
+export default function UserHeader({ user, credits, isDarkMode, onToggleTheme }) {
   if (!user) return null;
 
   const initial = user.firstName?.[0]?.toUpperCase() || '?';
@@ -28,17 +28,23 @@ export default function UserHeader({ user, credits }) {
               {initial}
             </div>
           )}
-          {user.isPremium && (
-            <div className="absolute -top-1 -right-1 bg-yellow-400 text-[8px] rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#050510] shadow-lg">
-              ⭐
-            </div>
-          )}
+          <button 
+            onClick={onToggleTheme}
+            className="absolute -bottom-1 -right-1 w-6 h-6 bg-slate-800 border border-slate-700 p-1 rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95"
+            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {isDarkMode ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            )}
+          </button>
         </div>
         <div>
-          <div className="text-[15px] font-bold text-slate-100 leading-tight">
+          <div className="text-[15px] font-bold" style={{ color: 'var(--text-primary)' }}>
             {displayName}
           </div>
-          <div className="text-[11px] font-medium text-slate-500">
+          <div className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
             {user.username ? `@${user.username}` : 'Pro Member'}
           </div>
         </div>

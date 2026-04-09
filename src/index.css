@@ -4,12 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
 :root {
+  /* DARK THEME (Default) */
   --bg-primary: #050510;
   --bg-secondary: #0f0f2e;
   --bg-card: rgba(255, 255, 255, 0.05);
@@ -27,6 +23,24 @@
   --text-muted: #64748b;
   --radius-xl: 16px;
   --radius-xxl: 24px;
+}
+
+body.light-mode {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-card-hover: rgba(255, 255, 255, 1);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-glow: rgba(139, 92, 246, 0.2);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 html, body {

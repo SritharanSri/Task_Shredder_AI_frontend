@@ -1,4 +1,4 @@
-import { useState, useCallback, Suspense, lazy } from 'react';
+import { useState, useCallback, Suspense, lazy, useEffect } from 'react';
 
 const TaskInput = lazy(() => import('./components/TaskInput'));
 const TaskList = lazy(() => import('./components/TaskList'));
@@ -11,6 +11,7 @@ import { useUser } from './hooks/useUser';
 import { useTelegram } from './hooks/useTelegram';
 import { breakdownWithAI, mockBreakdown } from './services/ai';
 import { showAdsgramAd } from './services/adsgram';
+const About = lazy(() => import('./components/About'));
 
 // ── Tab icons (inline SVG to keep bundle small) ──
 const Icons = {
@@ -31,6 +32,11 @@ const Icons = {
       <line x1="6" y1="20" x2="6" y2="14" />
     </svg>
   ),
+  Info: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+    </svg>
+  ),
 };
 
 export default function App() {
@@ -46,6 +52,7 @@ export default function App() {
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [tab, setTab] = useState('home');
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [toast, setToast] = useState(null);
   const [adLoading, setAdLoading] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
@@ -55,8 +62,23 @@ export default function App() {
   const [shredCount, setShredCount] = useState(0);
   const [lastInput, setLastInput] = useState('');
 
+  // ── Analytics & Session Tracking ──
+  useEffect(() => {
+    const hits = parseInt(localStorage.getItem('shredder_hits') || '0', 10);
+    localStorage.setItem('shredder_hits', (hits + 1).toString());
+    console.log(`[Analytics] Session #${hits + 1} started.`);
+  }, []);
+
   // ── Hooks ──
   const { user } = useTelegram();
+
+  useEffect(() => {
+    if (!isDarkMode) {
+      document.body.classList.add('light-mode');
+    } else {
+      document.body.classList.remove('light-mode');
+    }
+  }, [isDarkMode]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type, key: Date.now() });
@@ -224,7 +246,12 @@ export default function App() {
           </div>
         ) : (
           <>
-            <UserHeader user={user} credits={credits} />
+            <UserHeader 
+              user={user || userData} 
+              credits={credits} 
+              isDarkMode={isDarkMode}
+              onToggleTheme={() => setIsDarkMode(!isDarkMode)}
+            />
 
         {/* ── HOME TAB ── */}
         <Suspense fallback={<div className="flex justify-center p-10 mt-10"><span className="animate-spin text-2xl">⏳</span></div>}>
@@ -451,6 +478,14 @@ export default function App() {
             )}
           </div>
         )}
+
+        {/* ── ABOUT TAB ── */}
+        {tab === 'about' && (
+          <div className="mt-4 animate-fade-in">
+            <About />
+          </div>
+        )}
+
         </Suspense>
           </>
         )}
@@ -477,6 +512,7 @@ export default function App() {
           { key: 'home', label: 'Tasks', Icon: Icons.Home },
           { key: 'timer', label: 'Timer', Icon: Icons.Timer },
           { key: 'stats', label: 'Stats', Icon: Icons.Stats },
+          { key: 'about', label: 'Info', Icon: Icons.Info },
         ].map(({ key, label, Icon }) => (
           <button key={key} className={`tab-btn ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>
             <div className="tab-icon"><Icon /></div>
