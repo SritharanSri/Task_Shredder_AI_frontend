@@ -123,18 +123,18 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
   if (!activeTask) return null;
 
   return (
-    <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.1s', opacity: 0, animationFillMode: 'forwards' }}>
+    <div className="glass-card bg-slate-950/40 p-6 animate-fade-in-up border-white/5 shadow-2xl shadow-purple-900/10" style={{ borderRadius: 32, opacity: 0, animationFillMode: 'forwards' }}>
 
       {/* ── Mode Selector ── */}
-      <div className="flex items-center justify-center gap-2 mb-5">
+      <div className="flex items-center justify-center gap-1.5 mb-8">
         {Object.entries(MODES).map(([key, m]) => (
           <button
             key={key}
             onClick={() => switchMode(key, false)}
-            className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+            className="text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-2xl transition-all active:scale-95"
             style={{
-              background: mode === key ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.05)',
-              border: mode === key ? '1px solid rgba(139,92,246,0.45)' : '1px solid transparent',
+              background: mode === key ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
+              border: mode === key ? '1px solid rgba(139,92,246,0.3)' : '1px solid rgba(255,255,255,0.05)',
               color: mode === key ? 'var(--purple-light)' : 'var(--text-muted)',
             }}
           >
@@ -144,203 +144,119 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
       </div>
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-8 px-2">
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-            {mode === 'pomodoro' ? 'Now Focusing' : mode === 'short' ? 'Short Break' : 'Long Break'}
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-500 mb-1 opacity-80">
+            {mode === 'pomodoro' ? 'SHREDDING PHASE' : 'RECHARGE PHASE'}
           </p>
-          <p className="text-sm font-medium mt-1 line-clamp-1" style={{ color: 'var(--text-secondary)', paddingRight: 8 }}>
+          <p className="text-base font-bold line-clamp-1 text-slate-100 pr-4">
             {mode === 'pomodoro' ? activeTask.title : mode === 'short' ? 'Rest your eyes ☕' : 'Take a proper break 🌿'}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Sound toggle */}
           <button
             onClick={() => setSoundEnabled(s => !s)}
-            className="flex items-center justify-center rounded-full transition-all"
-            title={soundEnabled ? 'Mute sounds' : 'Unmute sounds'}
-            style={{
-              width: 32, height: 32,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: soundEnabled ? 'var(--text-secondary)' : 'var(--text-muted)',
-            }}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 active:scale-90 transition-all"
+            title={soundEnabled ? 'Mute' : 'Unmute'}
           >
             {soundEnabled ? (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
               </svg>
             ) : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" />
               </svg>
             )}
           </button>
-          {/* Session count badge */}
           {sessionCount > 0 && (
-            <span className="badge badge-purple" style={{ fontSize: 10 }}>#{sessionCount}</span>
+            <div className="bg-purple-500/20 text-purple-400 text-[10px] font-black px-2 py-1 rounded-lg border border-purple-500/30">
+              #{sessionCount}
+            </div>
           )}
-          <span className={`badge ${isDanger ? 'badge-red' : isWarning ? 'badge-orange' : mode === 'short' ? 'badge-green' : mode === 'long' ? 'badge-cyan' : 'badge-purple'}`}>
-            {isDanger ? '⚡ Last min' : isWarning ? '⏳ Almost' : currentMode.label}
-          </span>
         </div>
       </div>
 
       {/* ── Circular Timer ── */}
-      <div className="flex justify-center mb-6">
-        <div className="relative" style={{ width: 210, height: 210 }}>
-          <svg width="210" height="210" viewBox="0 0 210 210" style={{ transform: 'rotate(-90deg)' }}>
+      <div className="flex justify-center mb-10">
+        <div className="relative" style={{ width: 230, height: 230 }}>
+          <svg width="230" height="230" viewBox="0 0 210 210" style={{ transform: 'rotate(-90deg)' }}>
             <defs>
-              <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#8b5cf6" />
-                <stop offset="100%" stopColor="#a78bfa" />
+                <stop offset="100%" stopColor="#06b6d4" />
               </linearGradient>
-              <linearGradient id="breakGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#10b981" />
-                <stop offset="100%" stopColor="#34d399" />
-              </linearGradient>
-              <linearGradient id="longGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#06b6d4" />
-                <stop offset="100%" stopColor="#67e8f9" />
-              </linearGradient>
-              <linearGradient id="warningGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#f59e0b" />
-                <stop offset="100%" stopColor="#fb923c" />
-              </linearGradient>
-              <linearGradient id="dangerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#ef4444" />
-                <stop offset="100%" stopColor="#f43f5e" />
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
               </filter>
             </defs>
-            <circle cx="105" cy="105" r={RADIUS} fill="none" strokeWidth="8" stroke="rgba(255,255,255,0.06)" />
+            <circle cx="105" cy="105" r={RADIUS} fill="none" strokeWidth="6" stroke="rgba(255,255,255,0.03)" />
             <circle
               cx="105" cy="105" r={RADIUS}
-              fill="none" strokeWidth="8"
-              stroke={`url(#${ringGradientId})`}
+              fill="none" strokeWidth="10"
+              stroke={`url(#timerGradient)`}
               strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
               strokeDashoffset={dashOffset}
-              style={{ transition: 'stroke-dashoffset 1s linear', filter: 'url(#glow)' }}
+              style={{ transition: 'stroke-dashoffset 1s linear', filter: 'url(#glow)', opacity: isRunning ? 1 : 0.4 }}
             />
           </svg>
 
           {/* Center */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div
-              className={`text-5xl font-black tabular-nums ${isDanger ? 'animate-pulse' : ''}`}
-              style={{
-                background: isDanger
-                  ? 'linear-gradient(135deg, #ef4444, #f43f5e)'
-                  : isWarning
-                  ? 'linear-gradient(135deg, #f59e0b, #fb923c)'
-                  : mode === 'short'
-                  ? 'linear-gradient(135deg, #10b981, #34d399)'
-                  : mode === 'long'
-                  ? 'linear-gradient(135deg, #06b6d4, #67e8f9)'
-                  : 'linear-gradient(135deg, #a78bfa, #67e8f9)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                lineHeight: 1,
-              }}
-            >
+            <div className={`text-6xl font-black tabular-nums tracking-tighter ${isDanger ? 'animate-pulse text-red-500' : 'text-slate-100'}`} style={{ lineHeight: 1 }}>
               {minutes}:{seconds}
             </div>
-            <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-              {isDanger ? '🚨 Almost done!' : isRunning
-                ? mode === 'pomodoro' ? 'Stay focused 🔥' : 'Relax 🌊'
-                : 'Press play'}
+            <p className="text-[10px] mt-3 font-black uppercase tracking-[0.2em] text-slate-500">
+               {isRunning ? 'Session Active' : 'Ready to shred'}
             </p>
           </div>
         </div>
       </div>
 
       {/* ── Controls ── */}
-      <div className="flex items-center justify-center gap-4">
+      <div className="flex items-center justify-center gap-6">
         <button
           onClick={reset}
-          className="flex items-center justify-center rounded-full transition-all"
-          style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-slate-400 active:scale-90 transition-all hover:bg-white/10"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M21 3v5h-5" />
           </svg>
         </button>
 
         <button
           onClick={toggle}
-          className={`flex items-center justify-center rounded-full transition-all btn-gradient ${isRunning ? 'animate-pulse-glow' : ''}`}
-          style={{ width: 72, height: 72 }}
+          className="w-20 h-20 flex items-center justify-center rounded-3xl btn-gradient shadow-2xl shadow-purple-500/20 active:scale-95 transition-all"
         >
           {isRunning ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" />
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="5" width="4" height="14" rx="2" /><rect x="14" y="5" width="4" height="14" rx="2" />
             </svg>
           ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 3 }}>
-              <polygon points="5 3 19 12 5 21 5 3" />
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" className="ml-1">
+              <path d="M5 3l14 9-14 9V3z" />
             </svg>
           )}
         </button>
 
-        {/* Skip / complete */}
         <button
           onClick={mode === 'pomodoro' ? onComplete : () => switchMode('pomodoro', false)}
-          className="flex items-center justify-center rounded-full transition-all"
-          title={mode === 'pomodoro' ? 'Mark complete & skip' : 'Back to Pomodoro'}
-          style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-slate-400 active:scale-90 transition-all hover:bg-white/10"
         >
-          {mode === 'pomodoro' ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="5 4 15 12 5 20 5 4" /><line x1="19" y1="5" x2="19" y2="19" />
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
         </button>
       </div>
 
-      {/* ── Progress bar ── */}
-      <div className="mt-5 rounded-full overflow-hidden" style={{ height: 4, background: 'rgba(255,255,255,0.06)' }}>
-        <div
-          className="h-full rounded-full transition-all duration-1000"
-          style={{
-            width: `${progress * 100}%`,
-            background: isDanger
-              ? 'linear-gradient(90deg, #ef4444, #f43f5e)'
-              : isWarning
-              ? 'linear-gradient(90deg, #f59e0b, #fb923c)'
-              : mode === 'short'
-              ? 'linear-gradient(90deg, #10b981, #34d399)'
-              : mode === 'long'
-              ? 'linear-gradient(90deg, #06b6d4, #67e8f9)'
-              : 'linear-gradient(90deg, #8b5cf6, #06b6d4)',
-          }}
-        />
+      <div className="mt-10 flex flex-col items-center gap-2">
+         <div className="h-1.5 w-32 bg-slate-900 rounded-full overflow-hidden border border-white/5">
+            <div className="h-full bg-purple-500/40 transition-all duration-1000" style={{ width: `${progress * 100}%` }} />
+         </div>
+         <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Session Progress</span>
       </div>
-      <div className="flex justify-between mt-1">
-        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>0:00</span>
-        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{Math.floor(currentMode.duration / 60)}:00</span>
-      </div>
-
-      {/* ── Auto-break hint ── */}
-      {mode === 'pomodoro' && isRunning && (
-        <p className="text-center mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-          Break starts automatically after this Pomodoro 🧘
-        </p>
-      )}
     </div>
   );
 }

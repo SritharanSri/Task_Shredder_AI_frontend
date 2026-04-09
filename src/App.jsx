@@ -188,24 +188,26 @@ export default function App() {
   const allDone = tasks.length > 0 && tasks.every(t => t.completed);
 
   return (
-    <div style={{ background: 'var(--bg-primary)', minHeight: '100dvh', position: 'relative' }}>
-      <div className="bg-mesh" />
+    <div className="flex flex-col min-h-screen relative overflow-x-hidden w-full" style={{ background: 'var(--bg-primary)' }}>
+      <div className="bg-mesh pointer-events-none" />
 
-      {/* Toast */}
+      {/* Toast Overlay */}
       {toast && (
-        <Toast key={toast.key} message={toast.message} type={toast.type} onDone={() => setToast(null)} />
+        <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+          <Toast key={toast.key} message={toast.message} type={toast.type} onDone={() => setToast(null)} />
+        </div>
       )}
 
-      {/* Content */}
-      {userLoading ? (
-         <div className="flex items-center justify-center h-[50vh] text-xs text-center" style={{color: 'var(--text-muted)'}}>
-            Loading user data...
-         </div>
-      ) : (
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 480, margin: '0 auto', padding: '0 16px 90px', minHeight: '100dvh' }}>
-
-        {/* ── HEADER ── */}
-        <UserHeader user={user} credits={credits} />
+      {/* Main Container */}
+      <main className="flex-1 flex flex-col w-full max-w-lg mx-auto relative z-10 px-4 pt-4 pb-24">
+        {userLoading ? (
+          <div className="flex flex-col items-center justify-center flex-1 space-y-4 py-20 grayscale opacity-50">
+             <div className="w-12 h-12 border-t-2 border-purple-500 rounded-full animate-spin" />
+             <p className="text-xs font-bold tracking-widest uppercase">Syncing Data...</p>
+          </div>
+        ) : (
+          <>
+            <UserHeader user={user} credits={credits} />
 
         {/* ── HOME TAB ── */}
         <Suspense fallback={<div className="flex justify-center p-10 mt-10"><span className="animate-spin text-2xl">⏳</span></div>}>
@@ -431,8 +433,9 @@ export default function App() {
           </div>
         )}
         </Suspense>
-      </div>
-      )}
+          </>
+        )}
+      </main>
 
       {/* ── BOTTOM TAB BAR ── */}
       <div

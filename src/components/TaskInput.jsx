@@ -5,7 +5,7 @@ const TaskInput = React.memo(function TaskInput({ onBreakdown, isLoading }) {
   const [debouncedTask, setDebouncedTask] = useState('');
   const textareaRef = useRef(null);
 
-  // Debounce logic
+  // Debounce logic for potential secondary features
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedTask(task);
@@ -31,19 +31,21 @@ const TaskInput = React.memo(function TaskInput({ onBreakdown, isLoading }) {
     const el = textareaRef.current;
     if (el) {
       el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+      el.style.height = Math.min(el.scrollHeight, 180) + 'px';
     }
   };
 
   return (
-    <div className="animate-fade-in-up" style={{ opacity: 0, animationFillMode: 'forwards' }}>
-      <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-[24px] blur opacity-25 group-focus-within:opacity-50 transition duration-1000 group-focus-within:duration-200"></div>
-        <div className="relative glass-card p-4 pb-1" style={{ borderRadius: 24 }}>
-          <div className="flex gap-3 items-start">
-             <div className="mt-3 text-purple-400">
-               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    <div className="animate-fade-in-up w-full" style={{ opacity: 0, animationFillMode: 'forwards' }}>
+      <div className="relative group mb-2">
+        <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-[24px] blur-sm opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
+        <div className="relative glass-card bg-slate-900/40 p-5 pb-2" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex gap-4 items-start">
+             <div className="mt-3.5 text-purple-400 opacity-60">
+               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                 <path d="M2 17l10 5 10-5" />
+                 <path d="M2 12l10 5 10-5" />
                </svg>
              </div>
              <textarea
@@ -51,16 +53,22 @@ const TaskInput = React.memo(function TaskInput({ onBreakdown, isLoading }) {
                 value={task}
                 onChange={handleInput}
                 onKeyDown={handleKey}
-                placeholder="Enter your task (e.g. Build a website)"
+                placeholder="What project are we shredding?"
                 disabled={isLoading}
                 rows={2}
-                className="premium-input resize-none py-3"
-                style={{ minHeight: 52, fontSize: 16 }}
+                className="premium-input resize-none py-3 text-lg font-medium leading-relaxed"
+                style={{ minHeight: 60, outline: 'none' }}
               />
           </div>
           
-          <div className="flex items-center gap-2 px-8 py-2 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            {task.length > 0 ? `${task.length} characters` : 'AI Breakdown Ready'}
+          <div className="flex items-center justify-between px-2 py-3 border-t border-white/5">
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">
+               {task.length > 0 ? `${task.length} / 280` : 'AI ANALYSIS ACTIVE'}
+            </span>
+            <div className="flex gap-1.5 grayscale opacity-30">
+               <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+               <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+            </div>
           </div>
         </div>
       </div>
@@ -68,34 +76,34 @@ const TaskInput = React.memo(function TaskInput({ onBreakdown, isLoading }) {
       <button
         onClick={handleSubmit}
         disabled={!task.trim() || isLoading}
-        className="btn-gradient w-full mt-4 py-4 text-lg font-bold flex items-center justify-center gap-3 disabled:opacity-40 disabled:grayscale"
+        className="btn-gradient w-full py-5 text-lg font-black tracking-tight flex items-center justify-center gap-3 transition-all active:scale-[0.97] disabled:opacity-30 disabled:pointer-events-none shadow-2xl shadow-purple-500/10"
         style={{ borderRadius: 20 }}
       >
         {isLoading ? (
           <>
             <svg
-              width="20" height="20"
+              width="22" height="22"
               viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="3"
+              fill="none" stroke="currentColor" strokeWidth="3.5"
               strokeLinecap="round" strokeLinejoin="round"
-              className="animate-spin-slow"
+              className="animate-spin"
             >
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
-            AI is breaking your task...
+            <span className="animate-pulse">SHREDDING...</span>
           </>
         ) : (
           <>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
-            Generate Steps
+            SHRED TASK
           </>
         )}
       </button>
 
-      <p className="text-center mt-4 text-[11px] font-medium text-slate-500 uppercase tracking-tighter">
-        Guaranteed result in &lt; 5 seconds
+      <p className="text-center mt-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-40">
+        POWERED BY GEMINI 1.5 PRO
       </p>
     </div>
   );
