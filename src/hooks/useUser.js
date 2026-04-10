@@ -29,6 +29,14 @@ export function useUser() {
       : { 'Content-Type': 'application/json' };
   };
 
+  const refreshUser = useCallback(async () => {
+    const res = await fetch(`${API_BASE}/user/${getUserId()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data && !data.error) setUser(data);
+    return data;
+  }, [getUserId]);
+
   useEffect(() => {
     fetch(`${API_BASE}/user/${getUserId()}`)
       .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
@@ -108,5 +116,5 @@ export function useUser() {
     }));
   }, []);
 
-  return { user, loading, getUserId, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns };
+  return { user, loading, getUserId, refreshUser, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns };
 }

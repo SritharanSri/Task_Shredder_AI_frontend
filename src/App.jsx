@@ -41,7 +41,7 @@ const Icons = {
 };
 
 export default function App() {
-  const { user: userData, loading: userLoading, getUserId, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns } = useUser();
+  const { user: userData, loading: userLoading, getUserId, refreshUser, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns } = useUser();
   const credits = userData.credits;
   const totalCompleted = userData.totalCompleted;
   const taskHistory = userData.history;
@@ -66,6 +66,7 @@ export default function App() {
   const [shredCount, setShredCount] = useState(0);
   const [lastInput, setLastInput] = useState('');
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [premiumFx, setPremiumFx] = useState(false);
   const abortRef = useRef(null);
 
   // ── Analytics & Session Tracking ──
@@ -280,28 +281,54 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateCredits]);
 
+  const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api';
+
+  const openTelegramInvoice = useCallback((invoiceLink, onStatus) => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) throw new Error('Telegram WebApp SDK unavailable');
+    const openInvoiceFn = tg.openInvoice || tg.openInvoiceLink;
+    if (!openInvoiceFn) throw new Error('Invoice API not supported in this Telegram version');
+    // Both openInvoice and openInvoiceLink accept (url, callback)
+    openInvoiceFn.call(tg, invoiceLink, onStatus);
+  }, []);
+
+  const syncPremiumAfterPayment = useCallback(async () => {
+    // Webhook processing may take a short moment; retry briefly for instant unlock UX.
+    for (let i = 0; i < 5; i++) {
+      const data = await refreshUser();
+      if (data?.isPremium) {
+        setPremiumFx(true);
+        setTimeout(() => setPremiumFx(false), 1800);
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 600));
+    }
+    return false;
+  }, [refreshUser]);
+
   // ── Telegram Stars — Credits ──
   const handleBuyCredits = async () => {
     const tg = window.Telegram?.WebApp;
-    if (!tg?.openInvoiceLink) {
+    if (!tg) {
       showToast('Please open in Telegram to use Stars! ⭐', 'warning');
       return;
     }
 
     setBuyLoading(true);
     try {
+      const userId = getUserId();
       // Fetch invoice link from your backend
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api'}/invoice`, {
+      const res = await fetch(`${API_BASE}/invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'credits' }),
+        body: JSON.stringify({ type: 'credits', userId }),
       });
       if (!res.ok) throw new Error('Failed to generate invoice');
       
       const { invoiceLink } = await res.json();
       
       // Open native Telegram invoice UI
-      tg.openInvoiceLink(invoiceLink, (status) => {
+      openTelegramInvoice(invoiceLink, (status) => {
         if (status === 'paid') {
           updateCredits(20); 
           showToast('Payment successful! +20 Credits 🎉', 'success');
@@ -318,9 +345,9 @@ export default function App() {
   };
 
   // ── Telegram Stars — Premium ──
-  const handleBuyPremium = async (planType = 'premium_monthly') => {
+  const handleBuyPremium = async (planType = 'premium_plan') => {
     const tg = window.Telegram?.WebApp;
-    if (!tg?.openInvoiceLink) {
+    if (!tg) {
       showToast('Please open in Telegram to purchase Premium! ⭐', 'warning');
       return;
     }
@@ -328,7 +355,7 @@ export default function App() {
     setBuyLoading(true);
     try {
       const userId = getUserId();
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api'}/invoice`, {
+      const res = await fetch(`${API_BASE}/invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: planType, userId }),
@@ -337,9 +364,15 @@ export default function App() {
 
       const { invoiceLink } = await res.json();
 
-      tg.openInvoiceLink(invoiceLink, (status) => {
+      openTelegramInvoice(invoiceLink, async (status) => {
         if (status === 'paid') {
-          showToast('Welcome to Premium! 🌟 Restart the app to unlock all features.', 'success');
+          const synced = await syncPremiumAfterPayment();
+          showToast(
+            synced
+              ? 'Welcome to Pro! Advanced features unlocked instantly ⭐'
+              : 'Payment received. Syncing Premium status…',
+            'success',
+          );
           setShowPremiumModal(false);
         } else if (status === 'failed') {
           showToast('Payment failed', 'error');
@@ -364,6 +397,15 @@ export default function App() {
       {toast && (
         <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
           <Toast key={toast.key} message={toast.message} type={toast.type} onDone={() => setToast(null)} />
+        </div>
+      )}
+
+      {/* Premium unlock micro-animation */}
+      {premiumFx && (
+        <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+          <div className="glass-card px-6 py-4 animate-fade-in-up" style={{ borderColor: 'rgba(16,185,129,0.35)', boxShadow: '0 0 30px rgba(16,185,129,0.18)' }}>
+            <p className="text-sm font-black tracking-wide" style={{ color: '#10b981' }}>⭐ PRO UNLOCKED</p>
+          </div>
         </div>
       )}
 

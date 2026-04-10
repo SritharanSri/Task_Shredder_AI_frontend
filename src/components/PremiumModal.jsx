@@ -1,5 +1,12 @@
 const plans = [
   {
+    id: 'premium_plan',
+    label: '🔥 Unlock Pro',
+    price: '100 Stars',
+    desc: 'Instant premium unlock',
+    badge: 'Quick Start',
+  },
+  {
     id: 'premium_monthly',
     label: 'Monthly',
     price: '299 Stars',
