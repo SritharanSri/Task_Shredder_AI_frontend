@@ -1,5 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 
+// Returns true if the running Telegram client version meets the minimum requirement.
+// Telegram versions are strings like "6.0", "7.2" etc.
+function meetsVersion(tg, required) {
+  if (!tg?.version) return false;
+  const [maj, min = 0] = tg.version.split('.').map(Number);
+  const [rMaj, rMin = 0] = required.split('.').map(Number);
+  return maj > rMaj || (maj === rMaj && min >= rMin);
+}
+
 export function useTelegram() {
   const [user, setUser] = useState(null);
   const [tg, setTg] = useState(null);
@@ -9,10 +18,11 @@ export function useTelegram() {
     if (telegram) {
       telegram.ready();
       telegram.expand();
-      try {
-        telegram.setHeaderColor('#050510');
-        telegram.setBackgroundColor('#050510');
-      } catch (_) {}
+      // setHeaderColor / setBackgroundColor require Bot API 6.1+
+      if (meetsVersion(telegram, '6.1')) {
+        try { telegram.setHeaderColor('#050510'); } catch (_) {}
+        try { telegram.setBackgroundColor('#050510'); } catch (_) {}
+      }
       setTg(telegram);
       const u = telegram.initDataUnsafe?.user;
       if (u) {
@@ -32,34 +42,40 @@ export function useTelegram() {
   }, []);
 
   const haptic = useCallback((type = 'light') => {
-    tg?.HapticFeedback?.impactOccurred(type);
+    // HapticFeedback requires Bot API 6.1+
+    if (meetsVersion(tg, '6.1')) tg?.HapticFeedback?.impactOccurred(type);
   }, [tg]);
 
   const syncThemeColor = useCallback((isDark) => {
-    if (!tg) return;
+    if (!tg || !meetsVersion(tg, '6.1')) return;
     const color = isDark ? '#050510' : '#f8fafc';
-    try {
-      tg.setHeaderColor(color);
-      tg.setBackgroundColor(color);
-    } catch (_) {}
+    try { tg.setHeaderColor(color); } catch (_) {}
+    try { tg.setBackgroundColor(color); } catch (_) {}
   }, [tg]);
 
-  // Show native back button and call handler when pressed
+  // BackButton requires Bot API 6.1+
   const showBackButton = useCallback((onBack) => {
-    if (!tg?.BackButton) return;
+    if (!tg?.BackButton || !meetsVersion(tg, '6.1')) return;
     tg.BackButton.show();
     tg.BackButton.onClick(onBack);
     return () => { tg.BackButton.hide(); tg.BackButton.offClick(onBack); };
   }, [tg]);
 
-  const hideBackButton = useCallback(() => { tg?.BackButton?.hide(); }, [tg]);
+  const hideBackButton = useCallback(() => {
+    if (meetsVersion(tg, '6.1')) tg?.BackButton?.hide();
+  }, [tg]);
 
+  // enableClosingConfirmation requires Bot API 6.2+
   const enableClosingConfirmation = useCallback(() => {
-    try { tg?.enableClosingConfirmation?.(); } catch (_) {}
+    if (meetsVersion(tg, '6.2')) {
+      try { tg?.enableClosingConfirmation?.(); } catch (_) {}
+    }
   }, [tg]);
 
   const disableClosingConfirmation = useCallback(() => {
-    try { tg?.disableClosingConfirmation?.(); } catch (_) {}
+    if (meetsVersion(tg, '6.2')) {
+      try { tg?.disableClosingConfirmation?.(); } catch (_) {}
+    }
   }, [tg]);
 
   const closeApp = useCallback(() => tg?.close(), [tg]);
