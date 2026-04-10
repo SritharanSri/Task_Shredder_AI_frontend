@@ -1,6 +1,6 @@
 import PremiumGate from './PremiumGate';
 
-export default function StatsBar({ streak, credits, completed, todaySessions, isPremium, onUpgrade, dailyBreakdownsLeft, freeLimit }) {
+export default function StatsBar({ streak, credits, completed, todaySessions, isPremium, plan = 'free', onUpgrade, dailyBreakdownsLeft, freeLimit }) {
   const statCards = [
     { icon: '🔥', value: `${streak} Days`, label: 'Current Streak', color: 'text-orange-400', bg: 'bg-orange-500/10' },
     { icon: '✅', value: completed, label: 'Total Shredded', color: 'text-green-400', bg: 'bg-green-500/10' },
@@ -27,7 +27,7 @@ export default function StatsBar({ streak, credits, completed, todaySessions, is
         {isPremium ? (
           <span className="text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest"
             style={{ background: 'rgba(139,92,246,0.15)', color: 'var(--purple-light)', border: '1px solid rgba(139,92,246,0.3)' }}>
-            ⭐ Premium
+            ⭐ {plan === 'pro' ? 'Pro' : 'Starter'}
           </span>
         ) : (
           <button onClick={onUpgrade} className="text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest transition-all active:scale-95"
@@ -52,7 +52,7 @@ export default function StatsBar({ streak, credits, completed, todaySessions, is
 
       {/* 7-day chart — premium only */}
       <div className="mt-2">
-        <PremiumGate isPremium={isPremium} feature="7-Day Productivity Chart" onUpgrade={onUpgrade} blur>
+        <PremiumGate isPremium={plan === 'pro'} feature="7-Day Productivity Chart (Pro)" onUpgrade={onUpgrade} blur>
           <div className="glass-card p-5 rounded-3xl">
             <p className="text-xs font-black uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
               This Week's Focus

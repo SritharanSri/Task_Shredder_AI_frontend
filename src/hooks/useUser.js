@@ -12,9 +12,11 @@ export function useUser() {
     totalCompleted: 0,
     history: [],
     isPremium: false,
+    isPro: false,
+    plan: 'free',
     premiumExpiry: null,
-    dailyBreakdownsLeft: 3,
-    freeLimit: 3,
+    dailyBreakdownsLeft: 5,
+    freeLimit: 5,
   });
   const [loading, setLoading] = useState(true);
 

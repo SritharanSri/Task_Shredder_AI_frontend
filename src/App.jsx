@@ -47,7 +47,9 @@ export default function App() {
   const taskHistory = userData.history;
   const streak = userData.streak;
   const todaySessions = userData.todaySessions;
+  const plan = userData.plan || 'free';
   const isPremium = userData.isPremium;
+  const isPro = userData.isPro || plan === 'pro';
   const dailyBreakdownsLeft = userData.dailyBreakdownsLeft;
   const freeLimit = userData.freeLimit;
 
@@ -65,6 +67,7 @@ export default function App() {
   const [showHero, setShowHero] = useState(true);
   const [shredCount, setShredCount] = useState(0);
   const [lastInput, setLastInput] = useState('');
+  const [aiMode, setAiMode] = useState('focus');
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [premiumFx, setPremiumFx] = useState(false);
   const abortRef = useRef(null);
@@ -121,12 +124,12 @@ export default function App() {
     // Daily limit gate for free users
     if (!isPremium && dailyBreakdownsLeft === 0) {
       setShowPremiumModal(true);
-      showToast('Daily limit reached! Upgrade to Premium for unlimited breakdowns ⭐', 'warning');
+      showToast("You're becoming productive 🔥 Unlock unlimited mode?", 'warning');
       return;
     }
 
     // ── 1. Check client-side cache — instant response, zero network ──
-    const cached = getCachedBreakdown(mainTask);
+    const cached = getCachedBreakdown(mainTask, aiMode);
     if (cached) {
       const steps = cached.map((s, i) => ({ ...s, id: Date.now() + i, completed: false }));
       setTasks(steps);
@@ -162,6 +165,7 @@ export default function App() {
       await streamBreakdown(
         mainTask,
         getUserId(),
+        aiMode,
         (step) => {
           acc.steps.push(step);
           if (acc.steps.length === 1) setIsLoading(false); // hide skeleton on first step
@@ -175,6 +179,7 @@ export default function App() {
         cacheBreakdown(
           mainTask,
           acc.steps.map(({ title, time, difficulty, motivation }) => ({ title, time, difficulty, motivation })),
+          aiMode,
         );
       }
 
@@ -188,13 +193,13 @@ export default function App() {
 
       if (err.upgradeRequired) {
         setShowPremiumModal(true);
-        showToast('Daily limit reached! Go Premium for unlimited ⭐', 'warning');
+        showToast("You're becoming productive 🔥 Unlock unlimited mode?", 'warning');
         return;
       }
 
       // Streaming failed — fall back to batch endpoint
       try {
-        const result = await breakdownWithAI(mainTask, getUserId(), abortRef.current.signal);
+        const result = await breakdownWithAI(mainTask, getUserId(), aiMode, abortRef.current.signal);
         setTasks(result);
         updateCredits(-1);
         decrementDailyBreakdowns?.();
@@ -211,7 +216,7 @@ export default function App() {
       setIsLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [credits, isPremium, dailyBreakdownsLeft]);
+  }, [credits, isPremium, dailyBreakdownsLeft, aiMode]);
 
   const handleRegenerate = useCallback(() => {
     if (lastInput) handleBreakdown(lastInput);
@@ -244,6 +249,12 @@ export default function App() {
   }, [activeTaskId, handleTaskComplete]);
 
   const handleCopyPlan = useCallback(() => {
+    if (!isPremium) {
+      setShowPremiumModal(true);
+      showToast('Copy/share is available in Starter and Pro ⭐', 'warning');
+      return;
+    }
+
     const text = tasks.map((t, i) => {
       const meta = [t.time, t.difficulty].filter(Boolean).join(' · ');
       const line = `${i + 1}. ${t.title}${meta ? ` (${meta})` : ''}`;
@@ -252,7 +263,7 @@ export default function App() {
     navigator.clipboard.writeText(`My ${tasks.length}-step plan for "${lastInput || 'my task'}":\n\n${text}`)
       .then(() => showToast('Plan copied to clipboard! 📋', 'success'))
       .catch(() => showToast('Failed to copy', 'error'));
-  }, [tasks, lastInput]);
+  }, [tasks, lastInput, isPremium]);
 
   const handleReset = useCallback(() => {
     setTasks([]);
@@ -321,7 +332,7 @@ export default function App() {
       const res = await fetch(`${API_BASE}/invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'credits', userId }),
+        body: JSON.stringify({ type: 'basic_boost', userId }),
       });
       if (!res.ok) throw new Error('Failed to generate invoice');
       
@@ -330,8 +341,8 @@ export default function App() {
       // Open native Telegram invoice UI
       openTelegramInvoice(invoiceLink, (status) => {
         if (status === 'paid') {
-          updateCredits(20); 
-          showToast('Payment successful! +20 Credits 🎉', 'success');
+          updateCredits(10); 
+          showToast('Payment successful! +10 Credits 🎉', 'success');
         } else if (status === 'failed') {
           showToast('Payment failed', 'error');
         }
@@ -345,7 +356,7 @@ export default function App() {
   };
 
   // ── Telegram Stars — Premium ──
-  const handleBuyPremium = async (planType = 'premium_plan') => {
+  const handleBuyPremium = async (planType = 'starter_plan') => {
     const tg = window.Telegram?.WebApp;
     if (!tg) {
       showToast('Please open in Telegram to purchase Premium! ⭐', 'warning');
@@ -369,7 +380,7 @@ export default function App() {
           const synced = await syncPremiumAfterPayment();
           showToast(
             synced
-              ? 'Welcome to Pro! Advanced features unlocked instantly ⭐'
+              ? 'Plan unlocked! Your premium features are live ⭐'
               : 'Payment received. Syncing Premium status…',
             'success',
           );
@@ -457,12 +468,12 @@ export default function App() {
                     style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)' }}>
                     <span style={{ fontSize: 18 }}>⭐</span>
                     <div className="flex-1">
-                      <p className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Daily limit reached</p>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Upgrade to Premium for unlimited AI breakdowns</p>
+                      <p className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>You&apos;re becoming productive 🔥</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Unlock unlimited mode with Starter in one tap</p>
                     </div>
                     <button className="btn-gradient text-xs px-3 py-1.5 font-semibold shrink-0"
                       onClick={() => setShowPremiumModal(true)}>
-                      Upgrade
+                      🔥 Unlock Pro
                     </button>
                   </div>
                 )}
@@ -470,7 +481,31 @@ export default function App() {
                 {showHero ? (
                   <Hero onStart={() => setShowHero(false)} />
                 ) : (
-                  <TaskInput onBreakdown={handleBreakdown} isLoading={isLoading} />
+                  <>
+                    {isPro && (
+                      <div className="glass-card mb-3 p-2.5 flex items-center gap-2" style={{ borderColor: 'rgba(139,92,246,0.25)' }}>
+                        {[
+                          { key: 'focus', label: 'Focus Mode' },
+                          { key: 'deep', label: 'Deep Work' },
+                          { key: 'lazy', label: 'Lazy Mode' },
+                        ].map((m) => (
+                          <button
+                            key={m.key}
+                            onClick={() => setAiMode(m.key)}
+                            className="text-[10px] font-black px-2.5 py-1 rounded-xl transition-all"
+                            style={{
+                              background: aiMode === m.key ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.04)',
+                              border: aiMode === m.key ? '1px solid rgba(139,92,246,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                              color: aiMode === m.key ? 'var(--purple-light)' : 'var(--text-muted)',
+                            }}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <TaskInput onBreakdown={handleBreakdown} isLoading={isLoading} />
+                  </>
                 )}
 
                 {/* API error hint */}
@@ -533,7 +568,7 @@ export default function App() {
                 activeTask={activeTask} 
                 onComplete={handleTimerComplete} 
                 onRunningChange={setIsTimerRunning}
-                isPremium={isPremium}
+                isPremium={isPro}
                 onUpgrade={() => setShowPremiumModal(true)}
               />
             ) : (
@@ -574,6 +609,7 @@ export default function App() {
               completed={totalCompleted}
               todaySessions={todaySessions}
               isPremium={isPremium}
+              plan={plan}
               dailyBreakdownsLeft={dailyBreakdownsLeft}
               freeLimit={freeLimit}
               onUpgrade={() => setShowPremiumModal(true)}

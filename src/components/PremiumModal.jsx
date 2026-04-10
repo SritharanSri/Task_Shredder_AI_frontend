@@ -1,45 +1,40 @@
+import { useMemo, useState } from 'react';
+
 const plans = [
   {
-    id: 'premium_plan',
-    label: '🔥 Unlock Pro',
-    price: '100 Stars',
-    desc: 'Instant premium unlock',
-    badge: 'Quick Start',
+    id: 'pro_plan',
+    name: 'Pro',
+    stars: 300,
+    anchor: true,
+    badge: 'High Value',
+    benefits: ['Advanced AI breakdown', 'Smart modes: Focus / Deep Work / Lazy', 'Priority ranking + motivation tips'],
   },
   {
-    id: 'premium_monthly',
-    label: 'Monthly',
-    price: '299 Stars',
-    desc: 'Billed every month',
-    badge: null,
-  },
-  {
-    id: 'premium_annual',
-    label: 'Annual',
-    price: '1,999 Stars',
-    desc: 'Save ~44% vs monthly',
-    badge: 'Best Value',
-  },
-  {
-    id: 'premium_lifetime',
-    label: 'Lifetime',
-    price: '2,499 Stars',
-    desc: 'Pay once, keep forever',
+    id: 'starter_plan',
+    name: 'Starter',
+    stars: 100,
+    anchor: false,
     badge: 'Most Popular',
+    benefits: ['Unlimited task generation', 'Save task history', 'Copy / share output', 'Fast response mode'],
   },
-];
-
-const features = [
-  '∞ Unlimited AI task breakdowns per day',
-  '⚡ Up to 500 credits',
-  '🕐 Custom Pomodoro durations (15 / 25 / 50 min)',
-  '📊 Full 7-day productivity chart',
-  '🔄 Streak restore (never lose your streak)',
-  '🏅 Premium badge on your profile',
-  '🚫 No forced ads',
+  {
+    id: 'basic_boost',
+    name: 'Basic',
+    stars: 50,
+    anchor: false,
+    badge: null,
+    benefits: ['Small support pack', '+10 AI credits'],
+  },
 ];
 
 export default function PremiumModal({ onClose, onBuy, buyLoading }) {
+  const [selectedPlan, setSelectedPlan] = useState('starter_plan');
+
+  const active = useMemo(
+    () => plans.find((p) => p.id === selectedPlan) || plans[1],
+    [selectedPlan],
+  );
+
   const overlayStyle = {
     position: 'fixed',
     inset: 0,
@@ -56,74 +51,113 @@ export default function PremiumModal({ onClose, onBuy, buyLoading }) {
     background: 'var(--bg-secondary)',
     border: '1px solid rgba(139,92,246,0.25)',
     borderRadius: '24px 24px 0 0',
-    padding: '24px 20px 32px',
+    padding: '22px 18px 30px',
     width: '100%',
     maxWidth: 520,
-    maxHeight: '90dvh',
+    maxHeight: '92dvh',
     overflowY: 'auto',
   };
 
   return (
-    <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div style={overlayStyle} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={sheetStyle}>
-        {/* Handle */}
-        <div style={{ width: 40, height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 2, margin: '0 auto 20px' }} />
+        <div style={{ width: 40, height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 2, margin: '0 auto 16px' }} />
 
-        {/* Header */}
-        <div className="text-center mb-5">
-          <div style={{ fontSize: 40 }}>⭐</div>
-          <h2 className="text-xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
-            Task Shredder Premium
+        <div className="text-center mb-4">
+          <div style={{ fontSize: 34 }}>⭐</div>
+          <h2 className="text-xl font-black mt-1" style={{ color: 'var(--text-primary)' }}>
+            You&apos;re becoming productive 🔥
           </h2>
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            Unlock your full productivity potential
+            Unlock unlimited mode with Telegram Stars in one tap.
           </p>
         </div>
 
-        {/* Feature list */}
-        <div className="mb-5 space-y-2">
-          {features.map(f => (
-            <div key={f} className="flex items-start gap-2">
-              <span style={{ color: '#a78bfa', fontSize: 14, marginTop: 1 }}>✓</span>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{f}</span>
-            </div>
-          ))}
+        <div className="glass-card p-3 rounded-2xl mb-4" style={{ borderColor: 'rgba(139,92,246,0.22)' }}>
+          <p className="text-[11px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Free plan limits</p>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+            <div>• 5 AI tasks / day</div>
+            <div>• Basic breakdown only</div>
+            <div>• No history saving</div>
+            <div>• No advanced modes</div>
+          </div>
         </div>
 
-        {/* Plan cards */}
-        <div className="space-y-3 mb-5">
-          {plans.map(plan => (
-            <button
-              key={plan.id}
-              disabled={buyLoading}
-              onClick={() => onBuy(plan.id)}
-              className="w-full text-left p-4 rounded-2xl relative transition-all active:scale-95"
-              style={{
-                background: plan.badge ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
-                border: plan.badge ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                opacity: buyLoading ? 0.6 : 1,
-              }}
-            >
-              {plan.badge && (
-                <span className="absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: 'linear-gradient(90deg,#8b5cf6,#06b6d4)', color: '#fff' }}>
-                  {plan.badge}
-                </span>
-              )}
-              <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{plan.label}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{plan.desc}</p>
-              <p className="font-bold mt-1" style={{ color: '#a78bfa', fontSize: 15 }}>{plan.price}</p>
-            </button>
-          ))}
+        {/* Anchoring order: Pro first, Starter middle (default), Basic last */}
+        <div className="space-y-2.5 mb-4">
+          {plans.map((plan) => {
+            const selected = selectedPlan === plan.id;
+            const isPopular = plan.id === 'starter_plan';
+
+            return (
+              <button
+                key={plan.id}
+                type="button"
+                disabled={buyLoading}
+                onClick={() => setSelectedPlan(plan.id)}
+                className="w-full text-left p-3 rounded-2xl relative transition-all active:scale-95"
+                style={{
+                  background: selected ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
+                  border: selected ? '1px solid rgba(139,92,246,0.45)' : '1px solid rgba(255,255,255,0.08)',
+                  opacity: buyLoading ? 0.6 : 1,
+                  boxShadow: selected ? '0 0 24px rgba(139,92,246,0.20)' : 'none',
+                }}
+              >
+                {plan.badge && (
+                  <span
+                    className="absolute top-2.5 right-2.5 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide"
+                    style={{
+                      background: isPopular
+                        ? 'linear-gradient(90deg,#8b5cf6,#06b6d4)'
+                        : 'rgba(255,255,255,0.10)',
+                      color: '#fff',
+                    }}
+                  >
+                    {plan.badge}
+                  </span>
+                )}
+
+                <div className="flex items-center justify-between pr-24">
+                  <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>{plan.name}</p>
+                  <p className="font-black text-sm" style={{ color: '#a78bfa' }}>{plan.stars} ⭐</p>
+                </div>
+
+                <div className="mt-1 space-y-0.5">
+                  {plan.benefits.slice(0, 2).map((b) => (
+                    <p key={b} className="text-[11px]" style={{ color: 'var(--text-muted)' }}>• {b}</p>
+                  ))}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Dismiss */}
+        <div className="glass-card p-3 rounded-2xl mb-4" style={{ borderColor: 'rgba(6,182,212,0.25)' }}>
+          <p className="text-[11px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+            Selected: {active.name}
+          </p>
+          <div className="mt-2 space-y-1">
+            {active.benefits.map((b) => (
+              <p key={b} className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>✓ {b}</p>
+            ))}
+          </div>
+        </div>
+
+        {/* One primary CTA only */}
+        <button
+          onClick={() => onBuy(selectedPlan)}
+          disabled={buyLoading}
+          className="btn-gradient w-full py-3.5 rounded-2xl text-sm font-black tracking-wide disabled:opacity-60"
+        >
+          {buyLoading ? 'Opening Telegram checkout…' : '🔥 Unlock Pro with Stars'}
+        </button>
+
         <button
           onClick={onClose}
-          className="w-full py-3 text-sm font-medium rounded-2xl"
+          className="w-full py-2.5 mt-2 text-xs font-medium rounded-2xl"
           style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}
         >
-          Maybe later
+          Continue with free plan
         </button>
       </div>
     </div>
