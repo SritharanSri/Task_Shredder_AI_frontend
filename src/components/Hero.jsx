@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function Hero({ onStart }) {
   return (
     <div className="flex flex-col items-center text-center px-4 py-8 md:py-16 animate-fade-in-up">
@@ -15,13 +13,13 @@ export default function Hero({ onStart }) {
           <span className="gradient-text">into simple steps with AI</span>
         </h1>
         <p className="text-base md:text-lg text-slate-400 max-w-sm mx-auto leading-relaxed font-medium">
-          The ultimate AI task shredder. Convert overwhelming goals into bite-sized actionable sessions.
+          The ultimate AI task shredder. Convert overwhelming goals into bite-sized actionable Pomodoro sessions.
         </p>
       </div>
 
-      <button 
+      <button
         onClick={onStart}
-        className="btn-gradient w-full max-w-xs py-4.5 text-lg font-black shadow-xl shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+        className="btn-gradient w-full max-w-xs py-4 text-lg font-black shadow-xl shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
         style={{ borderRadius: 18 }}
       >
         <span>Start Breaking Tasks</span>
@@ -29,18 +27,6 @@ export default function Hero({ onStart }) {
           <path d="M5 12h14M12 5l7 7-7 7" />
         </svg>
       </button>
-
-      <div className="mt-12 flex items-center justify-center gap-8 opacity-30 grayscale saturate-0 pointer-events-none">
-        <div className="flex flex-col items-center">
-            <span className="text-2xl font-black tracking-tighter">50K+</span>
-            <span className="text-[9px] uppercase font-black tracking-widest text-slate-400">Goals Shredded</span>
-        </div>
-        <div className="w-px h-10 bg-white/10" />
-        <div className="flex flex-col items-center">
-            <span className="text-2xl font-black tracking-tighter">4.9/5</span>
-            <span className="text-[9px] uppercase font-black tracking-widest text-slate-400">Rating</span>
-        </div>
-      </div>
     </div>
   );
 }

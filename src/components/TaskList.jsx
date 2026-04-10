@@ -1,16 +1,17 @@
-import React from 'react';
+import { useTelegram } from '../hooks/useTelegram';
 
-const TaskList = React.memo(function TaskList({ 
-  tasks, 
-  activeTaskId, 
-  isTimerRunning, 
-  onTaskComplete, 
-  onTaskStart, 
+const TaskList = function TaskList({
+  tasks,
+  activeTaskId,
+  isTimerRunning,
+  onTaskComplete,
+  onTaskStart,
   isLoading,
   onReset,
   onCopy,
   onRegenerate
 }) {
+  const { openLink } = useTelegram();
   if (isLoading) {
     return (
       <div className="mt-8 space-y-4 animate-fade-in-up">
@@ -181,7 +182,7 @@ const TaskList = React.memo(function TaskList({
         </button>
 
         <button
-          onClick={() => window.open('https://t.me/share/url?url=' + encodeURIComponent(window.location.href), '_blank')}
+          onClick={() => openLink('https://t.me/share/url?url=' + encodeURIComponent('https://t.me/TaskShredderBot') + '&text=' + encodeURIComponent('Check out Task Shredder AI — I just shredded my tasks! 🚀'))}
           className="w-full py-5 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-slate-200 font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 transition-all active:scale-98 rounded-2xl hover:bg-white/5 shadow-2xl shadow-purple-900/20"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -192,6 +193,6 @@ const TaskList = React.memo(function TaskList({
       </div>
     </div>
   );
-});
+}
 
 export default TaskList;

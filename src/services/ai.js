@@ -1,24 +1,33 @@
 // Groq Cloud AI Service
-// All generative logic has been moved to the Backend proxy for security! 🔒
+// All generative logic runs on the Backend proxy for security 🔒
 
-const API_URL = import.meta.env.VITE_BACKEND_URL 
-  ? `${import.meta.env.VITE_BACKEND_URL}/break-task` 
+const API_URL = import.meta.env.VITE_BACKEND_URL
+  ? `${import.meta.env.VITE_BACKEND_URL}/break-task`
   : 'http://localhost:3000/api/break-task';
 
-export async function breakdownWithAI(task) {
+/**
+ * @param {string} task - The task to break down
+ * @param {string|null} userId - Telegram user ID (enables server-side daily limit enforcement)
+ * @param {AbortSignal|null} signal - Optional AbortSignal for request cancellation
+ */
+export async function breakdownWithAI(task, userId = null, signal = null) {
   const response = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ task }),
+    body: JSON.stringify({ task, userId }),
+    signal,
   });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error || `HTTP ${response.status}`);
+    // Surface structured errors from backend
+    const error = new Error(err?.message || err?.error || `HTTP ${response.status}`);
+    error.code = err?.error;
+    error.upgradeRequired = err?.upgradeRequired || false;
+    throw error;
   }
 
-  const steps = await response.json();
-  return steps;
+  return response.json();
 }
 
 // ── Fallback mock (used when no API key) ──

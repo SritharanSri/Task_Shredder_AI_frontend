@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSound } from '../hooks/useSound';
+import PremiumGate from './PremiumGate';
 
-const MODES = {
-  pomodoro: { label: 'Pomodoro', duration: 25 * 60, color: 'timerGradient', badge: 'badge-purple', icon: '🍅' },
-  short:    { label: 'Short Break', duration: 5 * 60, color: 'breakGradient', badge: 'badge-green', icon: '☕' },
-  long:     { label: 'Long Break', duration: 15 * 60, color: 'longGradient', badge: 'badge-cyan', icon: '🌿' },
-};
+// ── Mode definitions — pomodoro durations are configurable for premium ──
+const buildModes = (pomodoroDuration = 25) => ({
+  pomodoro: { label: 'Pomodoro', duration: pomodoroDuration * 60, icon: '🍅' },
+  short:    { label: 'Short Break', duration: 5 * 60, icon: '☕' },
+  long:     { label: 'Long Break', duration: 15 * 60, icon: '🌿' },
+});
 
+const PREMIUM_DURATIONS = [15, 25, 50]; // minutes
 const RADIUS = 88;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-// ── Request browser notification permission once ──
 function requestNotificationPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission().catch(() => {});
@@ -19,25 +21,25 @@ function requestNotificationPermission() {
 
 function sendNotification(title, body) {
   if ('Notification' in window && Notification.permission === 'granted') {
-    try {
-      new Notification(title, { body, icon: '/favicon.svg', silent: false });
-    } catch (e) {}
+    try { new Notification(title, { body, icon: '/favicon.svg', silent: false }); } catch (_) {}
   }
 }
 
-export default function PomodoroTimer({ activeTask, onComplete, onRunningChange }) {
+export default function PomodoroTimer({ activeTask, onComplete, onRunningChange, isPremium, onUpgrade }) {
   const [mode, setMode] = useState('pomodoro');
+  const [pomodoroDuration, setPomodoroDuration] = useState(25); // minutes — premium-configurable
+  const MODES = buildModes(pomodoroDuration);
   const [timeLeft, setTimeLeft] = useState(MODES.pomodoro.duration);
   const [isRunning, setIsRunning] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [sessionCount, setSessionCount] = useState(0);
   const intervalRef = useRef(null);
+  // Ref holds latest handler to fix stale-closure bug in timer effect
+  const handleTimerEndRef = useRef(null);
   const { playComplete, playStart, playPause, playTick } = useSound();
 
-  // Request notification permission on first render
   useEffect(() => { requestNotificationPermission(); }, []);
 
-  // When activeTask changes, reset everything to Pomodoro and auto-start
   useEffect(() => {
     if (activeTask) {
       switchMode('pomodoro', true);
@@ -50,7 +52,7 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
     }
   }, [activeTask?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Core countdown
+  // Core countdown — uses ref to avoid stale-closure bug
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       intervalRef.current = setInterval(() => {
@@ -62,15 +64,13 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
     } else if (timeLeft === 0) {
       clearInterval(intervalRef.current);
       setIsRunning(false);
-      handleTimerEnd();
+      // Use ref so we always call the latest version (fixes stale closure)
+      handleTimerEndRef.current?.();
     }
     return () => clearInterval(intervalRef.current);
   }, [isRunning, timeLeft]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync running state back to parent
-  useEffect(() => {
-    onRunningChange?.(isRunning);
-  }, [isRunning, onRunningChange]);
+  useEffect(() => { onRunningChange?.(isRunning); }, [isRunning, onRunningChange]);
 
   const handleTimerEnd = useCallback(() => {
     if (soundEnabled) playComplete();
@@ -79,14 +79,15 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
       setSessionCount(newCount);
       onComplete?.();
       sendNotification('🍅 Pomodoro Complete!', 'Great focus! Time for a break.');
-      // Auto-start short break
       setTimeout(() => switchMode(newCount % 4 === 0 ? 'long' : 'short', true), 800);
     } else {
       sendNotification('☕ Break Over!', 'Ready to focus again?');
-      // Auto-switch back to Pomodoro (don't auto-start)
       setTimeout(() => switchMode('pomodoro', false), 800);
     }
   }, [mode, sessionCount, soundEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep the ref current every render — this is the stale-closure fix
+  handleTimerEndRef.current = handleTimerEnd;
 
   const switchMode = useCallback((newMode, autoStart = false) => {
     clearInterval(intervalRef.current);
@@ -94,7 +95,7 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
     setTimeLeft(MODES[newMode].duration);
     setIsRunning(autoStart);
     if (autoStart && soundEnabled) playStart();
-  }, [soundEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [soundEnabled, pomodoroDuration]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = () => {
     const next = !isRunning;
@@ -112,7 +113,6 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const seconds = String(timeLeft % 60).padStart(2, '0');
   const progress = (currentMode.duration - timeLeft) / currentMode.duration;
-  // Ensure we don't have a full ring at exactly 0 progress due to transition artifacts
   const dashOffset = progress === 0 ? CIRCUMFERENCE : CIRCUMFERENCE * (1 - progress);
 
   const isWarning = mode === 'pomodoro' && timeLeft <= 5 * 60 && timeLeft > 60;
@@ -125,13 +125,13 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
   return (
     <div className="glass-card bg-slate-950/40 p-6 animate-fade-in-up border-white/5 shadow-2xl shadow-purple-900/10" style={{ borderRadius: 32, opacity: 0, animationFillMode: 'forwards' }}>
 
-      {/* ── Mode Selector ── */}
-      <div className="flex items-center justify-center gap-1.5 mb-8">
+      {/* ── Mode Selector — wraps on small screens ── */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
         {Object.entries(MODES).map(([key, m]) => (
           <button
             key={key}
             onClick={() => switchMode(key, false)}
-            className="text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-2xl transition-all active:scale-95"
+            className="text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-2xl transition-all active:scale-95"
             style={{
               background: mode === key ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
               border: mode === key ? '1px solid rgba(139,92,246,0.3)' : '1px solid rgba(255,255,255,0.05)',
@@ -142,6 +142,30 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
           </button>
         ))}
       </div>
+
+      {/* ── Premium: Custom Pomodoro Duration ── */}
+      {isPremium ? (
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Focus Time:</span>
+          {PREMIUM_DURATIONS.map(d => (
+            <button
+              key={d}
+              onClick={() => { setPomodoroDuration(d); if (!isRunning) setTimeLeft(d * 60); }}
+              className="text-[10px] font-black px-2.5 py-1 rounded-xl transition-all active:scale-95"
+              style={{
+                background: pomodoroDuration === d ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.04)',
+                border: pomodoroDuration === d ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(255,255,255,0.06)',
+                color: pomodoroDuration === d ? 'var(--purple-light)' : 'var(--text-muted)',
+              }}
+            >{d}m</button>
+          ))}
+        </div>
+      ) : (
+        <button onClick={onUpgrade} className="flex items-center justify-center gap-2 w-full mb-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+          style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)', color: 'var(--text-muted)' }}>
+          🔒 Custom Duration (15/25/50 min) — ⭐ Premium
+        </button>
+      )}
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-8 px-2">
@@ -177,10 +201,10 @@ export default function PomodoroTimer({ activeTask, onComplete, onRunningChange 
         </div>
       </div>
 
-      {/* ── Circular Timer ── */}
+      {/* ── Circular Timer — responsive: min(230px, viewport) ── */}
       <div className="flex justify-center mb-10">
-        <div className="relative" style={{ width: 230, height: 230 }}>
-          <svg width="230" height="230" viewBox="0 0 210 210" style={{ transform: 'rotate(-90deg)' }}>
+        <div className="relative" style={{ width: 'min(230px, calc(100vw - 80px))', height: 'min(230px, calc(100vw - 80px))' }}>
+          <svg width="100%" height="100%" viewBox="0 0 210 210" style={{ transform: 'rotate(-90deg)' }}>
             <defs>
               <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#8b5cf6" />

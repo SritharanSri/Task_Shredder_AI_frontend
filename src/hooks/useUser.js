@@ -1,77 +1,112 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api';
-const FALLBACK_USER_ID = 'local_user_123'; 
+const FALLBACK_USER_ID = 'local_dev_user';
 
 export function useUser() {
   const [user, setUser] = useState({
     credits: 10,
     streak: 0,
+    lastStreak: 0,
     todaySessions: 0,
     totalCompleted: 0,
-    history: []
+    history: [],
+    isPremium: false,
+    premiumExpiry: null,
+    dailyBreakdownsLeft: 3,
+    freeLimit: 3,
   });
   const [loading, setLoading] = useState(true);
 
-  const getUserId = () => {
-    return window.Telegram?.WebApp?.initDataUnsafe?.user?.id || FALLBACK_USER_ID;
+  const getUserId = useCallback(() =>
+    String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || FALLBACK_USER_ID),
+  []);
+
+  // Returns initData header for authenticated requests
+  const authHeaders = () => {
+    const initData = window.Telegram?.WebApp?.initData || '';
+    return initData ? { 'Content-Type': 'application/json', 'x-telegram-init-data': initData }
+      : { 'Content-Type': 'application/json' };
   };
 
   useEffect(() => {
     fetch(`${API_BASE}/user/${getUserId()}`)
-      .then(async res => {
-        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        if (data && !data.error) {
-          setUser(data);
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to load user:", err);
-        // Leave the default 'user' state intact
-        setLoading(false);
-      });
-  }, []);
+      .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+      .then(data => { if (data && !data.error) setUser(data); })
+      .catch(err => console.error('Failed to load user:', err))
+      .finally(() => setLoading(false));
+  }, [getUserId]);
 
-  const recordSession = async (taskTitle) => {
+  const recordSession = useCallback(async (taskTitle) => {
     try {
       const res = await fetch(`${API_BASE}/user/${getUserId()}/session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskTitle })
+        headers: authHeaders(),
+        body: JSON.stringify({ taskTitle }),
       });
       const updatedUser = await res.json();
-      setUser(updatedUser);
+      if (!updatedUser.error) setUser(updatedUser);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [getUserId]);
 
-  const updateCredits = async (amount) => {
+  const updateCredits = useCallback(async (amount) => {
+    // Optimistic update
+    const prevUser = user;
+    setUser(u => ({ ...u, credits: Math.max(0, u.credits + amount) }));
     try {
-      // Optimistic
-      setUser(u => ({ ...u, credits: Math.max(0, u.credits + amount) }));
-      await fetch(`${API_BASE}/user/${getUserId()}/credits`, {
+      const res = await fetch(`${API_BASE}/user/${getUserId()}/credits`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
+        headers: authHeaders(),
+        body: JSON.stringify({ amount }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      // Sync actual server value
+      setUser(u => ({ ...u, credits: data.credits }));
+    } catch (err) {
+      // Rollback on failure
+      setUser(prevUser);
+      console.error('Credits update failed:', err);
+    }
+  }, [getUserId, user]);
+
+  const clearHistory = useCallback(async () => {
+    setUser(u => ({ ...u, history: [] }));
+    try {
+      await fetch(`${API_BASE}/user/${getUserId()}/history`, {
+        method: 'DELETE',
+        headers: authHeaders(),
       });
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [getUserId]);
 
-  const clearHistory = async () => {
+  const restoreStreak = useCallback(async () => {
     try {
-      setUser(u => ({ ...u, history: [] }));
-      await fetch(`${API_BASE}/user/${getUserId()}/history`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/user/${getUserId()}/streak-restore`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setUser(data);
+      return true;
     } catch (err) {
-      console.error(err);
+      console.error('Streak restore failed:', err);
+      throw err;
     }
-  };
+  }, [getUserId]);
 
-  return { user, loading, recordSession, updateCredits, clearHistory };
+  // Decrement local daily breakdown counter after successful AI call
+  const decrementDailyBreakdowns = useCallback(() => {
+    setUser(u => ({
+      ...u,
+      dailyBreakdownsLeft: u.isPremium ? -1 : Math.max(0, (u.dailyBreakdownsLeft || 0) - 1),
+    }));
+  }, []);
+
+  return { user, loading, getUserId, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns };
 }

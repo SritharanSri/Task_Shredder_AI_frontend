@@ -1,4 +1,4 @@
-import { useState, useCallback, Suspense, lazy, useEffect } from 'react';
+import { useState, useCallback, Suspense, lazy, useEffect, useRef } from 'react';
 
 const TaskInput = lazy(() => import('./components/TaskInput'));
 const TaskList = lazy(() => import('./components/TaskList'));
@@ -12,6 +12,7 @@ import { useTelegram } from './hooks/useTelegram';
 import { breakdownWithAI, mockBreakdown } from './services/ai';
 import { showAdsgramAd } from './services/adsgram';
 const About = lazy(() => import('./components/About'));
+const PremiumModal = lazy(() => import('./components/PremiumModal'));
 
 // ── Tab icons (inline SVG to keep bundle small) ──
 const Icons = {
@@ -40,12 +41,15 @@ const Icons = {
 };
 
 export default function App() {
-  const { user: userData, loading: userLoading, recordSession, updateCredits, clearHistory } = useUser();
+  const { user: userData, loading: userLoading, getUserId, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns } = useUser();
   const credits = userData.credits;
   const totalCompleted = userData.totalCompleted;
   const taskHistory = userData.history;
   const streak = userData.streak;
   const todaySessions = userData.todaySessions;
+  const isPremium = userData.isPremium;
+  const dailyBreakdownsLeft = userData.dailyBreakdownsLeft;
+  const freeLimit = userData.freeLimit;
 
   // ── Session state (resets on close) ──
   const [tasks, setTasks] = useState([]);
@@ -61,6 +65,8 @@ export default function App() {
   const [showHero, setShowHero] = useState(true);
   const [shredCount, setShredCount] = useState(0);
   const [lastInput, setLastInput] = useState('');
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const abortRef = useRef(null);
 
   // ── Analytics & Session Tracking ──
   useEffect(() => {
@@ -70,7 +76,7 @@ export default function App() {
   }, []);
 
   // ── Hooks ──
-  const { user } = useTelegram();
+  const { user, syncThemeColor, enableClosingConfirmation, disableClosingConfirmation, showBackButton, hideBackButton } = useTelegram();
 
   useEffect(() => {
     if (!isDarkMode) {
@@ -78,11 +84,31 @@ export default function App() {
     } else {
       document.body.classList.remove('light-mode');
     }
-  }, [isDarkMode]);
+    syncThemeColor?.(isDarkMode);
+  }, [isDarkMode, syncThemeColor]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type, key: Date.now() });
   };
+
+  // ── Closing confirmation when session active ──
+  useEffect(() => {
+    if (tasks.length > 0 && isTimerRunning) {
+      enableClosingConfirmation?.();
+    } else {
+      disableClosingConfirmation?.();
+    }
+  }, [tasks.length, isTimerRunning, enableClosingConfirmation, disableClosingConfirmation]);
+
+  // ── BackButton: show when not on home tab ──
+  useEffect(() => {
+    if (tab !== 'home') {
+      const cleanup = showBackButton?.(() => setTab('home'));
+      return cleanup;
+    } else {
+      hideBackButton?.();
+    }
+  }, [tab, showBackButton, hideBackButton]);
 
   // ── AI Breakdown ──
   const handleBreakdown = async (mainTask) => {
@@ -90,6 +116,18 @@ export default function App() {
       showToast('No credits left! Watch an ad to earn more ⚡', 'warning');
       return;
     }
+
+    // Daily limit gate for free users
+    if (!isPremium && dailyBreakdownsLeft === 0) {
+      setShowPremiumModal(true);
+      showToast('Daily limit reached! Upgrade to Premium for unlimited breakdowns ⭐', 'warning');
+      return;
+    }
+
+    // Cancel any previous in-flight request
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+
     setIsLoading(true);
     setActiveTaskId(null);
     setApiError(null);
@@ -97,36 +135,28 @@ export default function App() {
     setShowHero(false);
     setLastInput(mainTask);
 
-    // QA Optimized Timeout (exactly 5s)
-    const timeout = setTimeout(() => {
-      if (isLoading) {
-        setApiError('AI is extremely busy. Using heavy-load fallback...');
-        showToast('Heavy load... Shredding tasks manually.', 'info');
-      }
-    }, 5000);
-
     try {
-      const result = await breakdownWithAI(mainTask);
+      const result = await breakdownWithAI(mainTask, getUserId(), abortRef.current.signal);
       setTasks(result);
       updateCredits(-1);
+      decrementDailyBreakdowns?.();
       setShredCount(prev => prev + 1);
       showToast('Task Shredded! Strategy Ready 🚀', 'success');
 
-      // AdsGram Safety: 2s Delay + Frequency Logic (1 ad per 3 actions)
-      if ((shredCount + 1) % 3 === 0) {
-        setTimeout(() => {
-          showToast('Loading sponsored bonus...', 'info');
-          handleWatchAd(true); // Auto-trigger ad
-        }, 2000);
+    } catch (err) {
+      if (err.name === 'AbortError') return; // User navigated away
+
+      if (err.upgradeRequired) {
+        setShowPremiumModal(true);
+        showToast('Daily limit reached! Go Premium for unlimited ⭐', 'warning');
+        return;
       }
 
-    } catch (err) {
       setApiError(err.message);
       showToast(`AI Error: ${err.message}. Using fallback.`, 'error');
       const fallback = await mockBreakdown(mainTask);
       setTasks(fallback);
     } finally {
-      clearTimeout(timeout);
       setIsLoading(false);
     }
   };
@@ -157,7 +187,7 @@ export default function App() {
 
   const handleCopyPlan = () => {
     const text = tasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n');
-    navigator.clipboard.writeText(`My ${tasks.length}-step plan for "${tasks[0]?.title || 'my task'}":\n\n${text}`)
+    navigator.clipboard.writeText(`My ${tasks.length}-step plan for "${lastInput || 'my task'}":\n\n${text}`)
       .then(() => showToast('Plan copied to clipboard! 📋', 'success'))
       .catch(() => showToast('Failed to copy', 'error'));
   };
@@ -188,7 +218,7 @@ export default function App() {
     });
   };
 
-  // ── Telegram Stars ──
+  // ── Telegram Stars — Credits ──
   const handleBuyCredits = async () => {
     const tg = window.Telegram?.WebApp;
     if (!tg?.openInvoiceLink) {
@@ -199,7 +229,11 @@ export default function App() {
     setBuyLoading(true);
     try {
       // Fetch invoice link from your backend
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api'}/invoice`, { method: 'POST' });
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api'}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'credits' }),
+      });
       if (!res.ok) throw new Error('Failed to generate invoice');
       
       const { invoiceLink } = await res.json();
@@ -207,10 +241,44 @@ export default function App() {
       // Open native Telegram invoice UI
       tg.openInvoiceLink(invoiceLink, (status) => {
         if (status === 'paid') {
-          // Backend webhook handles the DB update, but we do a dummy manual hit here for instant UI reflect or rely on page reload.
-          // In a real app we'd poll or wait for websocket. For now we optimistic assume.
           updateCredits(20); 
           showToast('Payment successful! +20 Credits 🎉', 'success');
+        } else if (status === 'failed') {
+          showToast('Payment failed', 'error');
+        }
+      });
+    } catch (err) {
+      console.error(err);
+      showToast('Could not initiate payment', 'error');
+    } finally {
+      setBuyLoading(false);
+    }
+  };
+
+  // ── Telegram Stars — Premium ──
+  const handleBuyPremium = async (planType = 'premium_monthly') => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg?.openInvoiceLink) {
+      showToast('Please open in Telegram to purchase Premium! ⭐', 'warning');
+      return;
+    }
+
+    setBuyLoading(true);
+    try {
+      const userId = getUserId();
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api'}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: planType, userId }),
+      });
+      if (!res.ok) throw new Error('Failed to generate invoice');
+
+      const { invoiceLink } = await res.json();
+
+      tg.openInvoiceLink(invoiceLink, (status) => {
+        if (status === 'paid') {
+          showToast('Welcome to Premium! 🌟 Restart the app to unlock all features.', 'success');
+          setShowPremiumModal(false);
         } else if (status === 'failed') {
           showToast('Payment failed', 'error');
         }
@@ -250,7 +318,8 @@ export default function App() {
               user={user || userData} 
               credits={credits} 
               isDarkMode={isDarkMode}
-              onToggleTheme={() => setIsDarkMode(!isDarkMode)}
+              onToggleTheme={() => setIsDarkMode(d => !d)}
+              isPremium={isPremium}
             />
 
         {/* ── HOME TAB ── */}
@@ -278,6 +347,22 @@ export default function App() {
             {/* Hero / Input block */}
             {tasks.length === 0 && !isLoading && (
               <>
+                {/* Daily limit warning banner */}
+                {!isPremium && dailyBreakdownsLeft === 0 && (
+                  <div className="mb-3 p-3 rounded-xl flex items-center gap-3"
+                    style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)' }}>
+                    <span style={{ fontSize: 18 }}>⭐</span>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold" style={{ color: '#fbbf24' }}>Daily limit reached</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Upgrade to Premium for unlimited AI breakdowns</p>
+                    </div>
+                    <button className="btn-gradient text-xs px-3 py-1.5 font-semibold shrink-0"
+                      onClick={() => setShowPremiumModal(true)}>
+                      Upgrade
+                    </button>
+                  </div>
+                )}
+
                 {showHero ? (
                   <Hero onStart={() => setShowHero(false)} />
                 ) : (
@@ -344,6 +429,8 @@ export default function App() {
                 activeTask={activeTask} 
                 onComplete={handleTimerComplete} 
                 onRunningChange={setIsTimerRunning}
+                isPremium={isPremium}
+                onUpgrade={() => setShowPremiumModal(true)}
               />
             ) : (
               <div className="glass-card p-10 text-center mt-8 animate-fade-in-up"
@@ -377,7 +464,16 @@ export default function App() {
         {/* ── STATS TAB ── */}
         {tab === 'stats' && (
           <div className="mt-4 animate-fade-in-up" style={{ opacity: 0, animationFillMode: 'forwards' }}>
-            <StatsBar streak={streak} credits={credits} completed={totalCompleted} todaySessions={todaySessions} />
+            <StatsBar
+              streak={streak}
+              credits={credits}
+              completed={totalCompleted}
+              todaySessions={todaySessions}
+              isPremium={isPremium}
+              dailyBreakdownsLeft={dailyBreakdownsLeft}
+              freeLimit={freeLimit}
+              onUpgrade={() => setShowPremiumModal(true)}
+            />
 
             {/* Credits panel */}
             <div className="glass-card p-5 mt-4" style={{ borderColor: 'rgba(139,92,246,0.2)' }}>
@@ -394,12 +490,12 @@ export default function App() {
               {/* Credit bar */}
               <div className="rounded-full overflow-hidden mb-4" style={{ height: 6, background: 'rgba(255,255,255,0.06)' }}>
                 <div className="h-full rounded-full" style={{
-                  width: `${Math.min((credits / 10) * 100, 100)}%`,
+                  width: `${Math.min((credits / (isPremium ? 500 : 30)) * 100, 100)}%`,
                   background: credits > 5 ? 'linear-gradient(90deg, #8b5cf6, #06b6d4)' : credits > 2 ? 'linear-gradient(90deg,#f59e0b,#fb923c)' : 'linear-gradient(90deg,#ef4444,#f43f5e)',
                   transition: 'width 0.5s ease',
                 }} />
               </div>
-              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>{credits} / 10 credits remaining</p>
+              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>{credits} / {isPremium ? 500 : 30} credits remaining</p>
 
               <div className="flex gap-2">
                 <button
@@ -482,7 +578,7 @@ export default function App() {
         {/* ── ABOUT TAB ── */}
         {tab === 'about' && (
           <div className="mt-4 animate-fade-in">
-            <About />
+            <About onUpgrade={() => setShowPremiumModal(true)} />
           </div>
         )}
 
@@ -520,6 +616,17 @@ export default function App() {
           </button>
         ))}
       </div>
+
+      {/* ── PREMIUM MODAL ── */}
+      {showPremiumModal && (
+        <Suspense fallback={null}>
+          <PremiumModal
+            onClose={() => setShowPremiumModal(false)}
+            onBuy={handleBuyPremium}
+            buyLoading={buyLoading}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
