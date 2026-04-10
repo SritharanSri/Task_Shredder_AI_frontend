@@ -149,7 +149,7 @@ export default function PremiumModal({ onClose, onBuy, buyLoading }) {
           disabled={buyLoading}
           className="btn-gradient w-full py-3.5 rounded-2xl text-sm font-black tracking-wide disabled:opacity-60"
         >
-          {buyLoading ? 'Opening Telegram checkout…' : '🔥 Unlock Pro with Stars'}
+          {buyLoading ? 'Opening Telegram checkout…' : `🔥 Unlock ${active.name} · ${active.stars}⭐`}
         </button>
 
         <button
