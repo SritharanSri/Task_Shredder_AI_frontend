@@ -650,30 +650,42 @@ export default function App() {
             </div>
 
             {/* Task history */}
-            {taskHistory.length > 0 && (
-              <div className="glass-card p-5 mt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-sm" style={{ color: 'var(--text-secondary)' }}>📋 Task History</h3>
-                  <button
-                    className="text-xs"
-                    style={{ color: 'var(--text-muted)' }}
-                    onClick={clearHistory}
-                  >
-                    Clear all
-                  </button>
+            {isPremium ? (
+              taskHistory.length > 0 && (
+                <div className="glass-card p-5 mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-sm" style={{ color: 'var(--text-secondary)' }}>📋 Task History</h3>
+                    <button
+                      className="text-xs"
+                      style={{ color: 'var(--text-muted)' }}
+                      onClick={clearHistory}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {taskHistory.slice(0, 8).map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 py-2"
+                        style={{ borderBottom: i < Math.min(taskHistory.length, 8) - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                        <span style={{ fontSize: 12 }}>✅</span>
+                        <p className="text-xs flex-1 line-clamp-1" style={{ color: 'var(--text-secondary)' }}>{item.title}</p>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>
+                          {new Date(item.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {taskHistory.slice(0, 8).map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 py-2"
-                      style={{ borderBottom: i < Math.min(taskHistory.length, 8) - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                      <span style={{ fontSize: 12 }}>✅</span>
-                      <p className="text-xs flex-1 line-clamp-1" style={{ color: 'var(--text-secondary)' }}>{item.title}</p>
-                      <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>
-                        {new Date(item.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              )
+            ) : (
+              <div className="glass-card p-5 mt-4" style={{ borderColor: 'rgba(139,92,246,0.25)' }}>
+                <h3 className="font-semibold text-sm" style={{ color: 'var(--text-secondary)' }}>📋 Full Task History</h3>
+                <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  Upgrade to Pro to unlock complete history and long-term productivity insights.
+                </p>
+                <button className="btn-gradient mt-3 px-4 py-2 text-xs font-semibold" onClick={() => setShowPremiumModal(true)}>
+                  🔥 Unlock Pro
+                </button>
               </div>
             )}
           </div>
