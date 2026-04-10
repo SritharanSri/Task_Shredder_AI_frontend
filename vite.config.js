@@ -13,8 +13,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-core';           // ~130 kB — cached aggressively
+          }
           if (id.includes('node_modules')) {
-            return 'vendor';
+            return 'vendor';              // everything else
           }
         }
       }

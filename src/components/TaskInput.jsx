@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, memo } from 'react';
 
 const MAX_LENGTH = 280;
 
@@ -98,5 +98,5 @@ const TaskInput = function TaskInput({ onBreakdown, isLoading }) {
   );
 };
 
-export default TaskInput;
+export default memo(TaskInput);
 

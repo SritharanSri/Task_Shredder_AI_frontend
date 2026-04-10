@@ -9,7 +9,7 @@ import Toast from './components/Toast';
 import UserHeader from './components/UserHeader';
 import { useUser } from './hooks/useUser';
 import { useTelegram } from './hooks/useTelegram';
-import { breakdownWithAI, mockBreakdown } from './services/ai';
+import { breakdownWithAI, streamBreakdown, getCachedBreakdown, cacheBreakdown, mockBreakdown } from './services/ai';
 import { showAdsgramAd } from './services/adsgram';
 const About = lazy(() => import('./components/About'));
 const PremiumModal = lazy(() => import('./components/PremiumModal'));
@@ -110,8 +110,8 @@ export default function App() {
     }
   }, [tab, showBackButton, hideBackButton]);
 
-  // ── AI Breakdown ──
-  const handleBreakdown = async (mainTask) => {
+  // ── AI Breakdown (streaming + client cache) ──
+  const handleBreakdown = useCallback(async (mainTask) => {
     if (credits <= 0) {
       showToast('No credits left! Watch an ad to earn more ⚡', 'warning');
       return;
@@ -124,27 +124,66 @@ export default function App() {
       return;
     }
 
-    // Cancel any previous in-flight request
+    // ── 1. Check client-side cache — instant response, zero network ──
+    const cached = getCachedBreakdown(mainTask);
+    if (cached) {
+      const steps = cached.map((s, i) => ({ ...s, id: Date.now() + i, completed: false }));
+      setTasks(steps);
+      setActiveTaskId(null);
+      setApiError(null);
+      setTab('home');
+      setShowHero(false);
+      setLastInput(mainTask);
+      updateCredits(-1);
+      decrementDailyBreakdowns?.();
+      setShredCount(prev => prev + 1);
+      showToast('Task Shredded! ⚡ (instant cache)', 'success');
+      return;
+    }
+
+    // ── 2. Cancel any in-flight request ──
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
     setIsLoading(true);
+    setTasks([]);
     setActiveTaskId(null);
     setApiError(null);
     setTab('home');
     setShowHero(false);
     setLastInput(mainTask);
 
+    // Mutable accumulator — avoids stale closure issues during streaming
+    const acc = { steps: [] };
+
     try {
-      const result = await breakdownWithAI(mainTask, getUserId(), abortRef.current.signal);
-      setTasks(result);
+      // ── 3. Stream steps — each step renders the moment it arrives ──
+      await streamBreakdown(
+        mainTask,
+        getUserId(),
+        (step) => {
+          acc.steps.push(step);
+          if (acc.steps.length === 1) setIsLoading(false); // hide skeleton on first step
+          setTasks(acc.steps.slice());
+        },
+        abortRef.current.signal,
+      );
+
+      // ── 4. Cache on success so next call is instant ──
+      if (acc.steps.length > 0) {
+        cacheBreakdown(
+          mainTask,
+          acc.steps.map(({ title, time, difficulty, motivation }) => ({ title, time, difficulty, motivation })),
+        );
+      }
+
       updateCredits(-1);
       decrementDailyBreakdowns?.();
       setShredCount(prev => prev + 1);
       showToast('Task Shredded! Strategy Ready 🚀', 'success');
 
     } catch (err) {
-      if (err.name === 'AbortError') return; // User navigated away
+      if (err.name === 'AbortError') return;
 
       if (err.upgradeRequired) {
         setShowPremiumModal(true);
@@ -152,40 +191,58 @@ export default function App() {
         return;
       }
 
-      setApiError(err.message);
-      showToast(`AI Error: ${err.message}. Using fallback.`, 'error');
-      const fallback = await mockBreakdown(mainTask);
-      setTasks(fallback);
+      // Streaming failed — fall back to batch endpoint
+      try {
+        const result = await breakdownWithAI(mainTask, getUserId(), abortRef.current.signal);
+        setTasks(result);
+        updateCredits(-1);
+        decrementDailyBreakdowns?.();
+        setShredCount(prev => prev + 1);
+        showToast('Task Shredded! Strategy Ready 🚀', 'success');
+      } catch (fallbackErr) {
+        if (fallbackErr.name === 'AbortError') return;
+        setApiError(fallbackErr.message);
+        showToast(`AI Error: ${fallbackErr.message}. Using mock data.`, 'error');
+        const mock = await mockBreakdown(mainTask);
+        setTasks(mock);
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [credits, isPremium, dailyBreakdownsLeft]);
 
-  const handleRegenerate = () => {
+  const handleRegenerate = useCallback(() => {
     if (lastInput) handleBreakdown(lastInput);
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastInput, handleBreakdown]);
 
   // ── Task actions ──
-  const handleTaskStart = (taskId) => {
+  const handleTaskStart = useCallback((taskId) => {
     setActiveTaskId(taskId);
     setTab('timer');
-  };
+  }, []);
 
-  const handleTaskComplete = (taskId) => {
+  const handleTaskComplete = useCallback((taskId) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t));
-    const task = tasks.find(t => t.id === taskId);
-    if (task && !task.completed) {
-      recordSession(task.title);
-      showToast('Pomodoro complete! Keep the flow! 🔥', 'success');
-    }
-    if (activeTaskId === taskId) setActiveTaskId(null);
-  };
+    // recordSession only on first completion
+    setTasks(prev => {
+      const task = prev.find(t => t.id === taskId);
+      if (task && task.completed) { // completed was just set to true above
+        recordSession(task.title);
+        showToast('Pomodoro complete! Keep the flow! 🔥', 'success');
+      }
+      return prev;
+    });
+    setActiveTaskId(prev => prev === taskId ? null : prev);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordSession]);
 
-  const handleTimerComplete = () => {
+  const handleTimerComplete = useCallback(() => {
     if (activeTaskId) handleTaskComplete(activeTaskId);
-  };
+  }, [activeTaskId, handleTaskComplete]);
 
-  const handleCopyPlan = () => {
+  const handleCopyPlan = useCallback(() => {
     const text = tasks.map((t, i) => {
       const meta = [t.time, t.difficulty].filter(Boolean).join(' · ');
       const line = `${i + 1}. ${t.title}${meta ? ` (${meta})` : ''}`;
@@ -194,17 +251,17 @@ export default function App() {
     navigator.clipboard.writeText(`My ${tasks.length}-step plan for "${lastInput || 'my task'}":\n\n${text}`)
       .then(() => showToast('Plan copied to clipboard! 📋', 'success'))
       .catch(() => showToast('Failed to copy', 'error'));
-  };
+  }, [tasks, lastInput]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setTasks([]);
     setActiveTaskId(null);
     setShowHero(true);
     setApiError(null);
-  };
+  }, []);
 
   // ── Rewarded Ad ──
-  const handleWatchAd = (isAuto = false) => {
+  const handleWatchAd = useCallback((isAuto = false) => {
     if (!isAuto) setAdLoading(true);
     showAdsgramAd({
       blockId: import.meta.env.VITE_ADSGRAM_BLOCK_ID || 'YOUR_BLOCK_ID',
@@ -220,7 +277,8 @@ export default function App() {
         showToast('+3 Credits Added (Dev Fallback) ⚡', 'info');
       },
     });
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateCredits]);
 
   // ── Telegram Stars — Credits ──
   const handleBuyCredits = async () => {

@@ -1,6 +1,92 @@
+import { memo } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 
-const TaskList = function TaskList({
+// ── TaskCard — memoized so only newly added/changed cards re-render ──
+const TaskCard = memo(function TaskCard({ task, index, isActive, isDone, onTaskStart, onTaskComplete }) {
+  return (
+    <div
+      key={task.id}
+      onClick={() => !isDone && onTaskStart(task.id)}
+      className={`group relative overflow-hidden transition-all duration-500 ${
+        isDone
+          ? 'opacity-40 grayscale scale-[0.98]'
+          : isActive
+            ? 'ring-2 ring-purple-500/50 bg-purple-500/5 -translate-y-1 shadow-2xl shadow-purple-500/10'
+            : 'hover:bg-white/5 bg-slate-900/20 shadow-lg'
+      } glass-card p-5 cursor-pointer border-white/5 rounded-3xl animate-fade-in-up`}
+      style={{ animationDelay: `${index * 0.08}s` }}
+    >
+      <div className="flex items-center gap-5">
+        {/* Number/Check */}
+        <div
+          className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg transition-all shadow-inner ${
+            isDone
+              ? 'bg-green-500 text-white'
+              : isActive
+                ? 'bg-gradient-to-br from-purple-500 to-cyan-500 text-white'
+                : 'bg-slate-800/80 text-slate-500 group-hover:text-slate-300'
+          }`}
+        >
+          {isDone ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (index + 1)}
+        </div>
+
+        {/* Text Area */}
+        <div className="flex-1 min-w-0">
+          <h4 className={`text-[15px] font-bold leading-snug break-words ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}`}>
+            {task.title}
+          </h4>
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            <span className={`text-[9px] uppercase font-black tracking-[0.2em] px-2 py-0.5 rounded-md ${isActive ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-slate-500'}`}>
+              {isActive ? '⚡ SHREDDING NOW' : task.time ? `⏱ ${task.time}` : '25 MIN SESSION'}
+            </span>
+            {task.difficulty && (
+              <span className="text-[9px] font-black tracking-wide px-2 py-0.5 rounded-md bg-white/5 text-slate-400">
+                {task.difficulty}
+              </span>
+            )}
+          </div>
+          {task.motivation && !isDone && (
+            <p className="text-[11px] text-slate-500 italic mt-1.5 leading-relaxed">
+              💡 {task.motivation}
+            </p>
+          )}
+        </div>
+
+        {/* Interactive Checkbox */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onTaskComplete(task.id); }}
+          className={`w-10 h-10 -mr-2 flex items-center justify-center transition-all active:scale-90 ${
+            isDone ? 'text-green-500' : 'text-slate-700 hover:text-purple-500'
+          }`}
+          aria-label="Complete task"
+        >
+          <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+            isDone ? 'bg-green-500 border-green-500' : 'border-current'
+          }`}>
+            {isDone && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </div>
+        </button>
+      </div>
+
+      {/* Decorative progress trace */}
+      {isActive && !isDone && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-500/20">
+          <div className="h-full bg-purple-500 animate-[shimmer_2s_infinite]" style={{ width: '40%' }} />
+        </div>
+      )}
+    </div>
+  );
+});
+
+const TaskList = memo(function TaskList({
   tasks,
   activeTaskId,
   isTimerRunning,
@@ -56,99 +142,19 @@ const TaskList = function TaskList({
         </div>
       </div>
 
-      {/* Task Cards */}
+      {/* Task Cards — each rendered by memoized TaskCard; only changed cards re-render */}
       <div className="space-y-4">
-        {tasks.map((task, index) => {
-          const isActive = activeTaskId === task.id;
-          const isDone = task.completed;
-
-          return (
-            <div
-              key={task.id}
-              onClick={() => !isDone && onTaskStart(task.id)}
-              className={`group relative overflow-hidden transition-all duration-500 ${
-                isDone 
-                  ? 'opacity-40 grayscale scale-[0.98]' 
-                  : isActive 
-                    ? 'ring-2 ring-purple-500/50 bg-purple-500/5 -translate-y-1 shadow-2xl shadow-purple-500/10' 
-                    : 'hover:bg-white/5 bg-slate-900/20 shadow-lg'
-              } glass-card p-5 cursor-pointer border-white/5 rounded-3xl`}
-              style={{ animationDelay: `${index * 0.15}s` }}
-            >
-              <div className="flex items-center gap-5">
-                {/* Number/Check */}
-                <div 
-                  className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg transition-all shadow-inner ${
-                    isDone 
-                      ? 'bg-green-500 text-white' 
-                      : isActive 
-                        ? 'bg-gradient-to-br from-purple-500 to-cyan-500 text-white' 
-                        : 'bg-slate-800/80 text-slate-500 group-hover:text-slate-300'
-                  }`}
-                >
-                  {isDone ? (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ) : (index + 1)}
-                </div>
-
-                {/* Text Area */}
-                <div className="flex-1 min-w-0">
-                  <h4 className={`text-[15px] font-bold leading-snug break-words ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}`}>
-                    {task.title}
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                    <span className={`text-[9px] uppercase font-black tracking-[0.2em] px-2 py-0.5 rounded-md ${isActive ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-slate-500'}`}>
-                      {isActive ? '⚡ SHREDDING NOW' : task.time ? `⏱ ${task.time}` : '25 MIN SESSION'}
-                    </span>
-                    {task.difficulty && (
-                      <span className="text-[9px] font-black tracking-wide px-2 py-0.5 rounded-md bg-white/5 text-slate-400">
-                        {task.difficulty}
-                      </span>
-                    )}
-                  </div>
-                  {task.motivation && !isDone && (
-                    <p className="text-[11px] text-slate-500 italic mt-1.5 leading-relaxed">
-                      💡 {task.motivation}
-                    </p>
-                  )}
-                </div>
-
-                {/* Interactive Checkbox (Large Target) */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTaskComplete(task.id);
-                  }}
-                  className={`w-10 h-10 -mr-2 flex items-center justify-center transition-all active:scale-90 ${
-                    isDone ? 'text-green-500' : 'text-slate-700 hover:text-purple-500'
-                  }`}
-                  aria-label="Complete task"
-                >
-                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
-                    isDone 
-                      ? 'bg-green-500 border-green-500' 
-                      : 'border-current'
-                  }`}>
-                    {isDone && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </div>
-                </button>
-              </div>
-
-              {/* Decorative progress trace */}
-              {isActive && !isDone && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-500/20">
-                    <div className="h-full bg-purple-500 animate-[shimmer_2s_infinite]" style={{ width: '40%' }} />
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {tasks.map((task, index) => (
+          <TaskCard
+            key={task.id}
+            task={task}
+            index={index}
+            isActive={activeTaskId === task.id}
+            isDone={task.completed}
+            onTaskStart={onTaskStart}
+            onTaskComplete={onTaskComplete}
+          />
+        ))}
       </div>
 
       {/* Engagement Loop */}
