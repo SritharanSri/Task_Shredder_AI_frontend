@@ -209,6 +209,6 @@ const TaskList = memo(function TaskList({
       </div>
     </div>
   );
-}
+});
 
 export default TaskList;
