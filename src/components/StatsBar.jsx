@@ -40,11 +40,11 @@ export default function StatsBar({ streak, credits, completed, todaySessions, is
       {/* Stat cards grid */}
       <div className="grid grid-cols-2 gap-3">
         {statCards.map(({ icon, value, label, color, bg }) => (
-          <div key={label} className="bg-slate-900/40 border border-white/5 rounded-3xl p-4 flex items-center gap-4 group shadow-lg">
+          <div key={label} className="glass-card rounded-3xl p-4 flex items-center gap-4 group shadow-lg">
             <div className={`w-12 h-12 rounded-2xl ${bg} flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform`}>{icon}</div>
             <div>
               <div className={`text-xl font-black ${color} leading-tight`}>{value}</div>
-              <div className="text-[10px] uppercase font-black tracking-widest text-slate-500">{label}</div>
+              <div className="text-[10px] uppercase font-black tracking-widest" style={{ color: 'var(--text-muted)' }}>{label}</div>
             </div>
           </div>
         ))}
@@ -65,7 +65,7 @@ export default function StatsBar({ streak, credits, completed, todaySessions, is
             </div>
             <div className="flex justify-between mt-2">
               {['M','T','W','T','F','S','S'].map((d, i) => (
-                <span key={i} className="flex-1 text-center text-[9px] font-black text-slate-600 uppercase">{d}</span>
+                <span key={i} className="flex-1 text-center text-[9px] font-black uppercase" style={{ color: 'var(--text-muted)' }}>{d}</span>
               ))}
             </div>
           </div>

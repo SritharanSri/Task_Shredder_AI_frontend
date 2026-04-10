@@ -415,7 +415,7 @@ export default function App() {
                     style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)' }}>
                     <span style={{ fontSize: 18 }}>⭐</span>
                     <div className="flex-1">
-                      <p className="text-xs font-semibold" style={{ color: '#fbbf24' }}>Daily limit reached</p>
+                      <p className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Daily limit reached</p>
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Upgrade to Premium for unlimited AI breakdowns</p>
                     </div>
                     <button className="btn-gradient text-xs px-3 py-1.5 font-semibold shrink-0"
@@ -433,7 +433,7 @@ export default function App() {
 
                 {/* API error hint */}
                 {apiError && (
-                  <div className="mt-3 p-3 rounded-xl text-xs" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5' }}>
+                  <div className="mt-3 p-3 rounded-xl text-xs" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: 'var(--text-secondary)' }}>
                     ⚠️ {apiError}. Using mock data. Add your GROQ_API_KEY in the backend <code>.env</code> file.
                   </div>
                 )}
@@ -651,13 +651,13 @@ export default function App() {
       
       {/* ── Compliance Footer ── */}
       <footer className="w-full max-w-lg mx-auto px-6 pb-28 pt-2 text-center opacity-40 hover:opacity-100 transition-opacity">
-        <div className="flex justify-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+        <div className="flex justify-center gap-4 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
           <button onClick={() => window.open('https://t.me/Kalai_Developer', '_blank')}>Contact Developer</button>
         </div>
         <p className="mt-2 text-[10px] text-purple-400 font-black uppercase tracking-widest">
           Created by @Kalai_Developer
         </p>
-        <p className="mt-1.5 text-[8px] text-slate-600 font-bold uppercase tracking-tighter">
+        <p className="mt-1.5 text-[8px] font-bold uppercase tracking-tighter" style={{ color: 'var(--text-muted)' }}>
           © 2026 TASK SHREDDER AI • POWERED BY GROQ CLOUD
         </p>
       </footer>

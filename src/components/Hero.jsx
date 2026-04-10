@@ -12,7 +12,7 @@ export default function Hero({ onStart }) {
           Break your big tasks<br/>
           <span className="gradient-text">into simple steps with AI</span>
         </h1>
-        <p className="text-base md:text-lg text-slate-400 max-w-sm mx-auto leading-relaxed font-medium">
+        <p className="text-base md:text-lg max-w-sm mx-auto leading-relaxed font-medium" style={{ color: 'var(--text-secondary)' }}>
           The ultimate AI task shredder. Convert overwhelming goals into bite-sized actionable Pomodoro sessions.
         </p>
       </div>
