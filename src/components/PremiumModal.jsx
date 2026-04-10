@@ -38,23 +38,23 @@ export default function PremiumModal({ onClose, onBuy, buyLoading }) {
   const overlayStyle = {
     position: 'fixed',
     inset: 0,
-    zIndex: 100,
+    zIndex: 12000,
     background: 'rgba(5,5,16,0.85)',
     backdropFilter: 'blur(6px)',
     display: 'flex',
     alignItems: 'flex-end',
     justifyContent: 'center',
-    padding: '0 0 env(safe-area-inset-bottom)',
+    padding: '0 0 max(12px, env(safe-area-inset-bottom))',
   };
 
   const sheetStyle = {
     background: 'var(--bg-secondary)',
     border: '1px solid rgba(139,92,246,0.25)',
     borderRadius: '24px 24px 0 0',
-    padding: '22px 18px 30px',
+    padding: '22px 18px max(30px, calc(env(safe-area-inset-bottom) + 12px))',
     width: '100%',
     maxWidth: 520,
-    maxHeight: '92dvh',
+    maxHeight: 'calc(100dvh - 12px)',
     overflowY: 'auto',
   };
 
