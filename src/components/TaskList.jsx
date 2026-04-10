@@ -98,11 +98,21 @@ const TaskList = function TaskList({
                   <h4 className={`text-[15px] font-bold leading-snug break-words ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}`}>
                     {task.title}
                   </h4>
-                  <div className="flex items-center gap-2 mt-1.5">
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
                     <span className={`text-[9px] uppercase font-black tracking-[0.2em] px-2 py-0.5 rounded-md ${isActive ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-slate-500'}`}>
-                      {isActive ? 'SHREDDING NOW' : '25 MIN SESSION'}
+                      {isActive ? '⚡ SHREDDING NOW' : task.time ? `⏱ ${task.time}` : '25 MIN SESSION'}
                     </span>
+                    {task.difficulty && (
+                      <span className="text-[9px] font-black tracking-wide px-2 py-0.5 rounded-md bg-white/5 text-slate-400">
+                        {task.difficulty}
+                      </span>
+                    )}
                   </div>
+                  {task.motivation && !isDone && (
+                    <p className="text-[11px] text-slate-500 italic mt-1.5 leading-relaxed">
+                      💡 {task.motivation}
+                    </p>
+                  )}
                 </div>
 
                 {/* Interactive Checkbox (Large Target) */}

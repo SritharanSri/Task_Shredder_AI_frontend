@@ -186,7 +186,11 @@ export default function App() {
   };
 
   const handleCopyPlan = () => {
-    const text = tasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n');
+    const text = tasks.map((t, i) => {
+      const meta = [t.time, t.difficulty].filter(Boolean).join(' · ');
+      const line = `${i + 1}. ${t.title}${meta ? ` (${meta})` : ''}`;
+      return t.motivation ? `${line}\n   💡 ${t.motivation}` : line;
+    }).join('\n\n');
     navigator.clipboard.writeText(`My ${tasks.length}-step plan for "${lastInput || 'my task'}":\n\n${text}`)
       .then(() => showToast('Plan copied to clipboard! 📋', 'success'))
       .catch(() => showToast('Failed to copy', 'error'));

@@ -35,12 +35,12 @@ export function mockBreakdown(task) {
   return new Promise((resolve) => {
     setTimeout(() => {
       const steps = [
-        `Research and gather all materials needed for: "${task}"`,
-        'Outline the structure, define scope and key milestones',
-        'Execute the first major phase of implementation',
-        'Review, test, and iterate based on initial results',
-        'Polish, finalize and prepare everything for delivery',
-      ].map((title, i) => ({ id: Date.now() + i, title, completed: false }));
+        { title: `🔍 Research & define exact success criteria for: "${task}"`, time: '15 min', difficulty: 'Easy 🟢', motivation: 'Clarity now saves 10x the time later.' },
+        { title: '📐 Outline structure, scope and assign time blocks', time: '10 min', difficulty: 'Easy 🟢', motivation: 'A plan you build is a plan you follow.' },
+        { title: '⚡ Execute the first and hardest phase without distractions', time: '25 min', difficulty: 'Hard 🔴', motivation: 'The first strike is 80% of the battle.' },
+        { title: '🔁 Review your output and iterate on the weak spots', time: '20 min', difficulty: 'Medium 🟡', motivation: 'Perfection is the enemy — progress wins.' },
+        { title: '✅ Finalize, polish and prepare for delivery', time: '15 min', difficulty: 'Easy 🟢', motivation: 'Ship it. Done beats perfect every time.' },
+      ].map((s, i) => ({ id: Date.now() + i, ...s, completed: false }));
       resolve(steps);
     }, 1500);
   });
