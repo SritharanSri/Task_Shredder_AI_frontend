@@ -1,22 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-
-export default function UserHeader({ user, credits, coins = 0, isDarkMode, onToggleTheme, isPremium }) {
+export default function UserHeader({ user, credits, isDarkMode, onToggleTheme, isPremium }) {
   if (!user) return null;
 
   const initial = user.firstName?.[0]?.toUpperCase() || '?';
-
-  // Animate coin badge when coins value increases
-  const prevCoins = useRef(coins);
-  const [coinPop, setCoinPop] = useState(false);
-  useEffect(() => {
-    if (coins > prevCoins.current) {
-      setCoinPop(true);
-      const t = setTimeout(() => setCoinPop(false), 600);
-      prevCoins.current = coins;
-      return () => clearTimeout(t);
-    }
-    prevCoins.current = coins;
-  }, [coins]);
 
   return (
     <header className="flex items-center justify-between mb-8">
@@ -55,29 +40,11 @@ export default function UserHeader({ user, credits, coins = 0, isDarkMode, onTog
         </div>
       </div>
 
-      {/* Right: Coins + Credits + Theme toggle */}
+      {/* Right: Credits + Theme toggle */}
       <div className="flex items-center gap-2">
         <div className="flex flex-col items-end gap-1">
           <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-sm">
             <span className="text-sm font-black gradient-text tracking-tight">SHREDDER AI</span>
-          </div>
-
-          {/* Coin balance */}
-          <div
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full"
-            style={{
-              background: 'rgba(234,179,8,0.1)',
-              border: '1px solid rgba(234,179,8,0.25)',
-              transform: coinPop ? 'scale(1.18)' : 'scale(1)',
-              transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)',
-            }}
-          >
-            <span
-              className="text-[10px] font-black tracking-widest uppercase"
-              style={{ color: '#eab308' }}
-            >
-              🪙 {coins} Coins
-            </span>
           </div>
 
           {/* Credits */}

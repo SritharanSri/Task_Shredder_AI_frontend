@@ -13,9 +13,6 @@ import { breakdownWithAI, streamBreakdown, getCachedBreakdown, cacheBreakdown, m
 import { showAdsgramAd } from './services/adsgram';
 const About = lazy(() => import('./components/About'));
 const PremiumModal = lazy(() => import('./components/PremiumModal'));
-const RewardPage = lazy(() => import('./components/RewardPage'));
-const Leaderboard = lazy(() => import('./components/Leaderboard'));
-import WatchAdButton from './components/WatchAdButton';
 
 // ── Tab icons (inline SVG to keep bundle small) ──
 const Icons = {
@@ -44,11 +41,8 @@ const Icons = {
 };
 
 export default function App() {
-  const { user: userData, loading: userLoading, getUserId, refreshUser, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns, addCoins } = useUser();
+  const { user: userData, loading: userLoading, getUserId, refreshUser, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns } = useUser();
   const credits = userData.credits;
-  const coins = userData.coins || 0;
-  const dailyCoinsEarned = userData.dailyCoinsEarned || 0;
-  const dailyCoinLimit = userData.dailyCoinLimit || 50;
   const totalCompleted = userData.totalCompleted;
   const taskHistory = userData.history;
   const streak = userData.streak;
@@ -76,16 +70,7 @@ export default function App() {
   const [aiMode, setAiMode] = useState('focus');
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [premiumFx, setPremiumFx] = useState(false);
-  const [showReward, setShowReward] = useState(false);
-  const [rewardResult, setRewardResult] = useState(null);
   const abortRef = useRef(null);
-
-  // ── Detect /reward route (AdsGram redirect or deep-link) ──
-  useEffect(() => {
-    if (window.location.pathname === '/reward') {
-      setShowReward(true);
-    }
-  }, []);
 
   // ── Analytics & Session Tracking ──
   useEffect(() => {
@@ -306,26 +291,6 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateCredits]);
 
-  // ── Coin Reward handler (server-validated, called by WatchAdButton) ──
-  // WatchAdButton already called /api/reward and got back the result.
-  // We stash that result so RewardPage can show it without making a second API call.
-  const handleCoinReward = useCallback((result) => {
-    if (result?.error) {
-      showToast(result.error, 'warning');
-      return;
-    }
-    if (result?.coinsEarned) {
-      addCoins(result.coinsEarned, result.totalCoinsToday);
-      setRewardResult(result);
-      setShowReward(true);
-      // On optimistic or alreadyCredited, refresh from server in background
-      if (result.optimistic || result.alreadyCredited) {
-        refreshUser().catch(() => {});
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addCoins, refreshUser]);
-
   const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api';
 
   const openTelegramInvoice = useCallback((invoiceLink, onStatus) => {
@@ -466,7 +431,6 @@ export default function App() {
             <UserHeader 
               user={user || userData} 
               credits={credits}
-              coins={coins}
               isDarkMode={isDarkMode}
               onToggleTheme={() => setIsDarkMode(d => !d)}
               isPremium={isPremium}
@@ -650,46 +614,6 @@ export default function App() {
               onUpgrade={() => setShowPremiumModal(true)}
             />
 
-            {/* Coins panel */}
-            <div className="glass-card p-5 mt-4" style={{ borderColor: 'rgba(234,179,8,0.25)' }}>
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>🪙 Coin Rewards</h3>
-                  <p className="mt-1" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    Watch ads to earn coins. Daily limit: {dailyCoinLimit} coins.
-                  </p>
-                </div>
-                <div className="text-2xl font-black" style={{ color: '#eab308' }}>{coins}</div>
-              </div>
-
-              {/* Daily coin progress bar */}
-              <div className="rounded-full overflow-hidden mb-3" style={{ height: 5, background: 'rgba(255,255,255,0.06)' }}>
-                <div className="h-full rounded-full" style={{
-                  width: `${Math.min((dailyCoinsEarned / dailyCoinLimit) * 100, 100)}%`,
-                  background: 'linear-gradient(90deg,#eab308,#f97316)',
-                  transition: 'width 0.5s ease',
-                }} />
-              </div>
-              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
-                Today: {dailyCoinsEarned} / {dailyCoinLimit} coins earned
-              </p>
-
-              <WatchAdButton
-                userId={getUserId()}
-                onRewardClaimed={handleCoinReward}
-                onError={(msg) => showToast(msg, 'warning')}
-                dailyCoinsEarned={dailyCoinsEarned}
-                dailyCoinLimit={dailyCoinLimit}
-              />
-            </div>
-
-            {/* Leaderboard */}
-            <div className="mt-4">
-              <Suspense fallback={null}>
-                <Leaderboard currentUserId={getUserId()} />
-              </Suspense>
-            </div>
-
             {/* Credits panel */}
             <div className="glass-card p-5 mt-4" style={{ borderColor: 'rgba(139,92,246,0.2)' }}>
               <div className="flex items-center justify-between mb-4">
@@ -843,25 +767,6 @@ export default function App() {
           </button>
         ))}
       </div>
-
-      {/* ── REWARD PAGE OVERLAY ── */}
-      {showReward && (
-        <Suspense fallback={null}>
-          <RewardPage
-            userId={getUserId()}
-            prefetchedResult={rewardResult}
-            onDone={() => {
-              setShowReward(false);
-              setRewardResult(null);
-              // Clean up the /reward URL without a full page reload
-              if (window.location.pathname === '/reward') {
-                window.history.replaceState({}, '', '/');
-              }
-              refreshUser();
-            }}
-          />
-        </Suspense>
-      )}
 
       {/* ── PREMIUM MODAL ── */}
       {showPremiumModal && (
