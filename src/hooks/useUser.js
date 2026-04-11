@@ -17,6 +17,9 @@ export function useUser() {
     premiumExpiry: null,
     dailyBreakdownsLeft: 5,
     freeLimit: 5,
+    coins: 0,
+    dailyCoinsEarned: 0,
+    dailyCoinLimit: 50,
   });
   const [loading, setLoading] = useState(true);
 
@@ -118,5 +121,14 @@ export function useUser() {
     }));
   }, []);
 
-  return { user, loading, getUserId, refreshUser, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns };
+  // Optimistically update coin balance after a confirmed ad reward
+  const addCoins = useCallback((amount, totalCoinsToday) => {
+    setUser(u => ({
+      ...u,
+      coins: (u.coins || 0) + amount,
+      dailyCoinsEarned: totalCoinsToday != null ? totalCoinsToday : (u.dailyCoinsEarned || 0) + amount,
+    }));
+  }, []);
+
+  return { user, loading, getUserId, refreshUser, recordSession, updateCredits, clearHistory, restoreStreak, decrementDailyBreakdowns, addCoins };
 }
