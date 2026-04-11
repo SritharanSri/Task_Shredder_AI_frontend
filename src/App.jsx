@@ -316,11 +316,15 @@ export default function App() {
     }
     if (result?.coinsEarned) {
       addCoins(result.coinsEarned, result.totalCoinsToday);
-      setRewardResult(result); // pass pre-fetched result to RewardPage
+      setRewardResult(result);
       setShowReward(true);
+      // On optimistic or alreadyCredited, refresh from server in background
+      if (result.optimistic || result.alreadyCredited) {
+        refreshUser().catch(() => {});
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addCoins]);
+  }, [addCoins, refreshUser]);
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api';
 
@@ -673,6 +677,7 @@ export default function App() {
               <WatchAdButton
                 userId={getUserId()}
                 onRewardClaimed={handleCoinReward}
+                onError={(msg) => showToast(msg, 'warning')}
                 dailyCoinsEarned={dailyCoinsEarned}
                 dailyCoinLimit={dailyCoinLimit}
               />
