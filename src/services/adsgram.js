@@ -19,14 +19,20 @@ export function showAdsgramAd({ blockId = 'YOUR_BLOCK_ID', onReward, onError }) 
 
   AdController.show()
     .then((result) => {
-      if (result.done) {
+      // SDK may resolve with {done:true}, true (boolean), or undefined — treat all truthy / done===true as reward
+      if (result === true || result?.done === true || result?.done == null) {
         onReward?.();
       } else {
-        onError?.('Ad skipped');
+        onError?.('Ad not completed');
       }
     })
     .catch((err) => {
-      onError?.(err?.description || 'Ad failed to load');
+      // SDK rejects on user skip OR on error; {done:false} means skip, otherwise real error
+      if (err?.done === false) {
+        onError?.('Ad skipped');
+      } else {
+        onError?.(err?.description || err?.message || 'Ad failed to load');
+      }
     });
 }
 

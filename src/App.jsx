@@ -77,6 +77,7 @@ export default function App() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [premiumFx, setPremiumFx] = useState(false);
   const [showReward, setShowReward] = useState(false);
+  const [rewardResult, setRewardResult] = useState(null);
   const abortRef = useRef(null);
 
   // ── Detect /reward route (AdsGram redirect or deep-link) ──
@@ -306,6 +307,8 @@ export default function App() {
   }, [updateCredits]);
 
   // ── Coin Reward handler (server-validated, called by WatchAdButton) ──
+  // WatchAdButton already called /api/reward and got back the result.
+  // We stash that result so RewardPage can show it without making a second API call.
   const handleCoinReward = useCallback((result) => {
     if (result?.error) {
       showToast(result.error, 'warning');
@@ -313,6 +316,7 @@ export default function App() {
     }
     if (result?.coinsEarned) {
       addCoins(result.coinsEarned, result.totalCoinsToday);
+      setRewardResult(result); // pass pre-fetched result to RewardPage
       setShowReward(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -840,8 +844,10 @@ export default function App() {
         <Suspense fallback={null}>
           <RewardPage
             userId={getUserId()}
+            prefetchedResult={rewardResult}
             onDone={() => {
               setShowReward(false);
+              setRewardResult(null);
               // Clean up the /reward URL without a full page reload
               if (window.location.pathname === '/reward') {
                 window.history.replaceState({}, '', '/');

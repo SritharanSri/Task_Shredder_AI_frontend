@@ -3,21 +3,27 @@ import { useEffect, useState } from 'react';
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api';
 
 /**
- * RewardPage — shown after AdsGram completes and the user lands on /reward?userId=xxx
- * or after the in-app WatchAdButton triggers a reward state.
+ * RewardPage — shown after AdsGram completes.
  *
  * Props:
- *  userId       – string  – the user who completed the ad
- *  onDone       – fn()   – called when user taps "Back to App"
- *  autoClose    – number – ms before auto-closing (default 3000, 0 = off)
+ *  userId           – string  – the user who completed the ad
+ *  onDone           – fn()   – called when user taps "Back to App"
+ *  autoClose        – number – ms before auto-closing (default 3500, 0 = off)
+ *  prefetchedResult – object – if provided, skip the API call and show success directly.
+ *                              Used when WatchAdButton already claimed the reward so we
+ *                              don't double-call /api/reward and hit the cooldown.
  */
-export default function RewardPage({ userId, onDone, autoClose = 3500 }) {
-  const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'cooldown' | 'limit' | 'error'
-  const [result, setResult] = useState(null);
+export default function RewardPage({ userId, onDone, autoClose = 3500, prefetchedResult = null }) {
+  // If the caller already has the server result, start in 'success' immediately.
+  const [status, setStatus] = useState(prefetchedResult ? 'success' : 'loading');
+  const [result, setResult] = useState(prefetchedResult);
   const [waitSeconds, setWaitSeconds] = useState(0);
   const [countdown, setCountdown] = useState(null);
 
   useEffect(() => {
+    // Skip API call when result was pre-fetched by WatchAdButton
+    if (prefetchedResult) return;
+
     if (!userId) {
       setStatus('error');
       return;
@@ -50,7 +56,7 @@ export default function RewardPage({ userId, onDone, autoClose = 3500 }) {
       });
 
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, prefetchedResult]);
 
   // Auto-close after success
   useEffect(() => {
